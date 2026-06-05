@@ -6,6 +6,7 @@ import {
   Calendar,
   ClipboardCheck,
   FileText,
+  Wallet,
   Settings,
   LogOut,
   GraduationCap,
@@ -33,6 +34,7 @@ const adminItems = [
   { title: "Schedule", url: "/schedule", icon: Calendar },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
   { title: "Tests", url: "/tests", icon: FileText },
+  { title: "Fees", url: "/fees", icon: Wallet },
 ] as const;
 
 const studentItems = [

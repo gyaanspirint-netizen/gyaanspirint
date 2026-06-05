@@ -52,6 +52,50 @@ export type Database = {
           },
         ]
       }
+      fees: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          paid_amount: number
+          student_id: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number
+          student_id: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number
+          student_id?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fees_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -88,6 +132,7 @@ export type Database = {
           parent_phone: string
           student_phone: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           admission_date: string
@@ -100,6 +145,7 @@ export type Database = {
           parent_phone: string
           student_phone: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           admission_date?: string
@@ -112,6 +158,7 @@ export type Database = {
           parent_phone?: string
           student_phone?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

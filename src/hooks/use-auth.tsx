@@ -28,14 +28,30 @@ export function useAuth() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setRole((data?.role as AppRole) ?? "student");
-      });
+    let cancelled = false;
+    const metaRole = (user.user_metadata?.role as AppRole | undefined) ?? null;
+    const fetchRole = async (attempt = 0): Promise<void> => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.role) {
+        setRole(data.role as AppRole);
+        return;
+      }
+      // Trigger may not have committed yet right after signup — retry briefly.
+      if (attempt < 5) {
+        setTimeout(() => fetchRole(attempt + 1), 400);
+        return;
+      }
+      setRole(metaRole ?? "student");
+    };
+    fetchRole();
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   return { session, user, role, loading };
