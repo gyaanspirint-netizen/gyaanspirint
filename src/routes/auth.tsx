@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { GraduationCap } from "lucide-react";
 
@@ -22,6 +23,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<"student" | "admin">("student");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -42,12 +44,12 @@ function AuthPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: fullName },
+        data: { full_name: fullName, role },
       },
     });
     setLoading(false);
     if (error) toast.error(error.message);
-    else toast.success("Check your email to confirm your account.");
+    else toast.success("Account created. You're signed in.");
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
