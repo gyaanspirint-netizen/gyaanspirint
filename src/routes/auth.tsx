@@ -114,6 +114,29 @@ function AuthPage() {
                     <Label htmlFor="password-up">Password</Label>
                     <Input id="password-up" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
                   </div>
+                  <div className="space-y-2">
+                    <Label>I am a</Label>
+                    <RadioGroup
+                      value={role}
+                      onValueChange={(v) => setRole(v as "student" | "admin")}
+                      className="grid grid-cols-2 gap-2"
+                    >
+                      <Label
+                        htmlFor="role-student"
+                        className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-accent"
+                      >
+                        <RadioGroupItem id="role-student" value="student" />
+                        <span>Student</span>
+                      </Label>
+                      <Label
+                        htmlFor="role-admin"
+                        className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-accent"
+                      >
+                        <RadioGroupItem id="role-admin" value="admin" />
+                        <span>Admin</span>
+                      </Label>
+                    </RadioGroup>
+                  </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Creating..." : "Create account"}
                   </Button>
