@@ -38,6 +38,45 @@ export type Database = {
         }
         Relationships: []
       }
+      students: {
+        Row: {
+          admission_date: string
+          batch: string
+          created_at: string
+          created_by: string | null
+          father_name: string
+          id: string
+          name: string
+          parent_phone: string
+          student_phone: string
+          updated_at: string
+        }
+        Insert: {
+          admission_date: string
+          batch: string
+          created_at?: string
+          created_by?: string | null
+          father_name: string
+          id?: string
+          name: string
+          parent_phone: string
+          student_phone: string
+          updated_at?: string
+        }
+        Update: {
+          admission_date?: string
+          batch?: string
+          created_at?: string
+          created_by?: string | null
+          father_name?: string
+          id?: string
+          name?: string
+          parent_phone?: string
+          student_phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
