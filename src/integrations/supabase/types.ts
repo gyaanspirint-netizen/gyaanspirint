@@ -115,6 +115,39 @@ export type Database = {
         }
         Relationships: []
       }
+      tests: {
+        Row: {
+          batch: string
+          created_at: string
+          created_by: string | null
+          id: string
+          subject: string
+          test_date: string
+          test_name: string
+          updated_at: string
+        }
+        Insert: {
+          batch: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          subject: string
+          test_date: string
+          test_name: string
+          updated_at?: string
+        }
+        Update: {
+          batch?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          subject?: string
+          test_date?: string
+          test_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
