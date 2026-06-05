@@ -4,6 +4,7 @@ import {
   Users,
   BookOpen,
   Calendar,
+  ClipboardCheck,
   Settings,
   LogOut,
   GraduationCap,
@@ -29,12 +30,14 @@ const adminItems = [
   { title: "Students", url: "/students", icon: Users },
   { title: "Courses", url: "/courses", icon: BookOpen },
   { title: "Schedule", url: "/schedule", icon: Calendar },
+  { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
 ] as const;
 
 const studentItems = [
   { title: "Dashboard", url: "/student", icon: LayoutDashboard },
   { title: "My Courses", url: "/courses", icon: BookOpen },
   { title: "Schedule", url: "/schedule", icon: Calendar },
+  { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
 ] as const;
 
 export function AppSidebar() {
