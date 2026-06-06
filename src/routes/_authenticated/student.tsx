@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -13,7 +14,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
-import { Wallet, Loader2 } from "lucide-react";
+import {
+  Wallet,
+  Loader2,
+  UserCheck,
+  UserX,
+  CalendarDays,
+  Clock,
+  FileText,
+  Percent,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/student")({
   head: () => ({ meta: [{ title: "Student Dashboard — Coaching Hub" }] }),
@@ -23,6 +33,18 @@ export const Route = createFileRoute("/_authenticated/student")({
 function StudentDashboard() {
   const { user, role } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [student, setStudent] = useState<{
+    id: string;
+    name: string;
+    batch: string;
+    admission_date: string;
+  } | null>(null);
+  const [attendance, setAttendance] = useState<
+    { id: string; date: string; status: "present" | "absent" }[]
+  >([]);
+  const [tests, setTests] = useState<
+    { id: string; test_name: string; subject: string; batch: string; test_date: string }[]
+  >([]);
   const [fees, setFees] = useState<
     {
       id: string;
@@ -36,18 +58,53 @@ function StudentDashboard() {
   useEffect(() => {
     if (role !== "student" || !user) return;
     (async () => {
-      const { data, error } = await supabase
+      setLoading(true);
+      const today = new Date().toISOString().slice(0, 10);
+
+      const [studentRes, feesRes, attendanceRes, testsRes] = await Promise.all([
+        supabase
+          .from("students")
+          .select("id, name, batch, admission_date")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
         .from("fees")
         .select("id, total_amount, paid_amount, due_date, notes")
-        .order("due_date", { ascending: true });
-      if (!error) {
+          .order("due_date", { ascending: true }),
+        supabase
+          .from("attendance")
+          .select("id, date, status")
+          .order("date", { ascending: false }),
+        supabase
+          .from("tests")
+          .select("id, test_name, subject, batch, test_date")
+          .gte("test_date", today)
+          .order("test_date", { ascending: true }),
+      ]);
+
+      if (studentRes.data) setStudent(studentRes.data);
+      if (!feesRes.error) {
         setFees(
-          (data ?? []).map((r) => ({
+          (feesRes.data ?? []).map((r) => ({
             ...r,
             total_amount: Number(r.total_amount),
             paid_amount: Number(r.paid_amount),
           })),
         );
+      }
+      if (!attendanceRes.error) {
+        setAttendance(
+          (attendanceRes.data ?? []).map((r) => ({
+            id: r.id,
+            date: r.date,
+            status: r.status as "present" | "absent",
+          })),
+        );
+      }
+      if (!testsRes.error) {
+        const studentBatch = studentRes.data?.batch;
+        const allTests = testsRes.data ?? [];
+        setTests(studentBatch ? allTests.filter((t) => t.batch === studentBatch) : allTests);
       }
       setLoading(false);
     })();
@@ -71,52 +128,231 @@ function StudentDashboard() {
     { total: 0, paid: 0 },
   );
   const pending = totals.total - totals.paid;
+  const nextDue = fees
+    .filter((f) => f.total_amount - f.paid_amount > 0)
+    .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+  const feeStatus =
+    fees.length === 0
+      ? { label: "No Records", variant: "outline" as const }
+      : pending <= 0
+        ? { label: "Paid", variant: "default" as const }
+        : totals.paid > 0
+          ? { label: "Partial", variant: "secondary" as const }
+          : { label: "Pending", variant: "destructive" as const };
+
+  const presentDays = attendance.filter((a) => a.status === "present").length;
+  const absentDays = attendance.filter((a) => a.status === "absent").length;
+  const totalDays = presentDays + absentDays;
+  const attendancePct = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Student Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""} — track your learning journey.
+          Welcome back{student?.name ? `, ${student.name}` : user?.email ? `, ${user.email.split("@")[0]}` : ""} — here's your overview.
         </p>
+      </div>
+
+      {!loading && !student && (
+        <Card>
+          <CardContent className="py-6 text-sm text-muted-foreground text-center">
+            Your student profile hasn't been linked yet. Please ask your admin to link your account.
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Attendance
+            </CardTitle>
+            <Percent className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-2xl font-bold">
+              {loading ? "—" : `${attendancePct}%`}
+            </div>
+            <Progress value={attendancePct} />
+            <p className="text-xs text-muted-foreground">
+              {totalDays} day{totalDays === 1 ? "" : "s"} recorded
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Present Days
+            </CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-500">
+              {loading ? "—" : presentDays}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Absent Days
+            </CardTitle>
+            <UserX className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">
+              {loading ? "—" : absentDays}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Batch
+            </CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loading ? "—" : student?.batch ?? "—"}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Your assigned batch</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Fees
+              Fee Status
             </CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? "—" : `₹${totals.total.toFixed(2)}`}
-            </div>
+          <CardContent className="space-y-1">
+            <Badge variant={feeStatus.variant}>{feeStatus.label}</Badge>
+            <p className="text-xs text-muted-foreground">
+              Total: {loading ? "—" : `₹${totals.total.toFixed(2)}`}
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Paid
+              Pending Fees
             </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-500">
-              {loading ? "—" : `₹${totals.paid.toFixed(2)}`}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending
-            </CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
               {loading ? "—" : `₹${pending.toFixed(2)}`}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Paid: ₹{totals.paid.toFixed(2)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Next Due Date
+            </CardTitle>
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loading
+                ? "—"
+                : nextDue
+                  ? format(new Date(nextDue.due_date), "PP")
+                  : "—"}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {nextDue ? `₹${(nextDue.total_amount - nextDue.paid_amount).toFixed(2)} due` : "No pending dues"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4" /> Upcoming Tests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
+            ) : tests.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                No upcoming tests scheduled.
+              </p>
+            ) : (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Test</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tests.slice(0, 8).map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell className="font-medium">{t.test_name}</TableCell>
+                        <TableCell>{t.subject}</TableCell>
+                        <TableCell>{format(new Date(t.test_date), "PP")}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" /> Recent Attendance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
+            ) : attendance.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                No attendance records yet.
+              </p>
+            ) : (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {attendance.slice(0, 8).map((a) => (
+                      <TableRow key={a.id}>
+                        <TableCell>{format(new Date(a.date), "PP")}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={a.status === "present" ? "default" : "destructive"}
+                          >
+                            {a.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
