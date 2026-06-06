@@ -1,13 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { studentLoginLookup } from "@/lib/students.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { GraduationCap } from "lucide-react";
 
@@ -20,11 +21,13 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const lookupFn = useServerFn(studentLoginLookup);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<"student" | "admin">("student");
   const [loading, setLoading] = useState(false);
+  const [cuid, setCuid] = useState("");
+  const [studentPhone, setStudentPhone] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -44,12 +47,12 @@ function AuthPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: fullName, role },
+        data: { full_name: fullName, role: "admin" },
       },
     });
     setLoading(false);
     if (error) toast.error(error.message);
-    else toast.success("Account created. You're signed in.");
+    else toast.success("Admin account created. You're signed in.");
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -58,6 +61,23 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) toast.error(error.message);
+  };
+
+  const handleStudentSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const creds = await lookupFn({ data: { cuid, phone: studentPhone } });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: creds.email,
+        password: creds.password,
+      });
+      if (error) throw error;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sign-in failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogle = async () => {
@@ -77,18 +97,51 @@ function AuthPage() {
         <Card>
           <CardHeader>
             <CardTitle>Welcome</CardTitle>
-            <CardDescription>Sign in or create an account to continue.</CardDescription>
+            <CardDescription>
+              Students sign in with CUID and phone. Admins use email and password.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin">
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
+            <Tabs defaultValue="student">
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="student">Student</TabsTrigger>
+                <TabsTrigger value="signin">Admin</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
+              <TabsContent value="student">
+                <form onSubmit={handleStudentSignIn} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cuid">CUID</Label>
+                    <Input
+                      id="cuid"
+                      value={cuid}
+                      onChange={(e) => setCuid(e.target.value)}
+                      placeholder="e.g. JOH482917"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="student-phone">Phone</Label>
+                    <Input
+                      id="student-phone"
+                      type="tel"
+                      value={studentPhone}
+                      onChange={(e) => setStudentPhone(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Signing in..." : "Sign in as student"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Don't have a CUID? Ask your admin.
+                  </p>
+                </form>
+              </TabsContent>
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">Admin Email</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
@@ -102,6 +155,9 @@ function AuthPage() {
               </TabsContent>
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4 mt-4">
+                  <p className="text-xs text-muted-foreground">
+                    Sign up creates an admin account. Students are created by admins from the Students page.
+                  </p>
                   <div className="space-y-2">
                     <Label htmlFor="name">Full name</Label>
                     <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
@@ -114,31 +170,8 @@ function AuthPage() {
                     <Label htmlFor="password-up">Password</Label>
                     <Input id="password-up" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>I am a</Label>
-                    <RadioGroup
-                      value={role}
-                      onValueChange={(v) => setRole(v as "student" | "admin")}
-                      className="grid grid-cols-2 gap-2"
-                    >
-                      <Label
-                        htmlFor="role-student"
-                        className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-accent"
-                      >
-                        <RadioGroupItem id="role-student" value="student" />
-                        <span>Student</span>
-                      </Label>
-                      <Label
-                        htmlFor="role-admin"
-                        className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-accent"
-                      >
-                        <RadioGroupItem id="role-admin" value="admin" />
-                        <span>Admin</span>
-                      </Label>
-                    </RadioGroup>
-                  </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating..." : "Create account"}
+                    {loading ? "Creating..." : "Create admin account"}
                   </Button>
                 </form>
               </TabsContent>

@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   FileText,
   Wallet,
+  CalendarClock,
   Settings,
   LogOut,
   GraduationCap,
@@ -30,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 const adminItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Students", url: "/students", icon: Users },
+  { title: "Batches", url: "/batches", icon: CalendarClock },
   { title: "Courses", url: "/courses", icon: BookOpen },
   { title: "Schedule", url: "/schedule", icon: Calendar },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
