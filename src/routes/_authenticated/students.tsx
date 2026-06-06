@@ -1,11 +1,21 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { createStudent, deleteStudent } from "@/lib/students.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -39,7 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Loader2, Copy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students")({
   head: () => ({ meta: [{ title: "Students — Coaching Hub" }] }),
@@ -54,6 +64,7 @@ type Student = {
   parent_phone: string;
   batch: string;
   admission_date: string;
+  cuid: string | null;
 };
 
 const studentSchema = z.object({
@@ -87,8 +98,11 @@ const emptyForm: FormValues = {
 };
 
 function StudentsPage() {
-  const { role, user } = useAuth();
+  const { role } = useAuth();
+  const createStudentFn = useServerFn(createStudent);
+  const deleteStudentFn = useServerFn(deleteStudent);
   const [students, setStudents] = useState<Student[]>([]);
+  const [batches, setBatches] = useState<{ name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -97,6 +111,10 @@ function StudentsPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [credentialsDialog, setCredentialsDialog] = useState<{
+    cuid: string;
+    phone: string;
+  } | null>(null);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -112,8 +130,16 @@ function StudentsPage() {
     setStudents(data ?? []);
   };
 
+  const fetchBatches = async () => {
+    const { data } = await supabase.from("batches").select("name").order("name");
+    setBatches(data ?? []);
+  };
+
   useEffect(() => {
-    if (role === "admin") fetchStudents();
+    if (role === "admin") {
+      fetchStudents();
+      fetchBatches();
+    }
   }, [role]);
 
   const filtered = useMemo(() => {
@@ -125,7 +151,8 @@ function StudentsPage() {
         s.father_name.toLowerCase().includes(q) ||
         s.student_phone.toLowerCase().includes(q) ||
         s.parent_phone.toLowerCase().includes(q) ||
-        s.batch.toLowerCase().includes(q),
+        s.batch.toLowerCase().includes(q) ||
+        (s.cuid ?? "").toLowerCase().includes(q),
     );
   }, [students, search]);
 
@@ -172,25 +199,35 @@ function StudentsPage() {
       setSaving(false);
       if (error) return toast.error(error.message);
       toast.success("Student updated");
+      setDialogOpen(false);
+      fetchStudents();
     } else {
-      const { error } = await supabase
-        .from("students")
-        .insert({ ...parsed.data, created_by: user?.id });
-      setSaving(false);
-      if (error) return toast.error(error.message);
-      toast.success("Student added");
+      try {
+        const res = await createStudentFn({ data: parsed.data });
+        setSaving(false);
+        toast.success(`Student added — CUID: ${res.cuid}`);
+        setDialogOpen(false);
+        setCredentialsDialog({ cuid: res.cuid, phone: res.password });
+        fetchStudents();
+      } catch (err) {
+        setSaving(false);
+        toast.error(err instanceof Error ? err.message : "Failed to add student");
+        return;
+      }
     }
-    setDialogOpen(false);
-    fetchStudents();
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    const { error } = await supabase.from("students").delete().eq("id", deleteId);
-    setDeleteId(null);
-    if (error) return toast.error(error.message);
-    toast.success("Student deleted");
-    fetchStudents();
+    try {
+      await deleteStudentFn({ data: { id: deleteId } });
+      setDeleteId(null);
+      toast.success("Student deleted");
+      fetchStudents();
+    } catch (err) {
+      setDeleteId(null);
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+    }
   };
 
   if (role === null) {
@@ -245,6 +282,7 @@ function StudentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>CUID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Father</TableHead>
                     <TableHead>Student Phone</TableHead>
@@ -257,6 +295,15 @@ function StudentsPage() {
                 <TableBody>
                   {filtered.map((s) => (
                     <TableRow key={s.id}>
+                      <TableCell>
+                        {s.cuid ? (
+                          <Badge variant="secondary" className="font-mono">
+                            {s.cuid}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium">{s.name}</TableCell>
                       <TableCell>{s.father_name}</TableCell>
                       <TableCell>{s.student_phone}</TableCell>
@@ -297,7 +344,7 @@ function StudentsPage() {
             <DialogDescription>
               {editing
                 ? "Update the student's information."
-                : "Enter the new student's details."}
+                : "A unique CUID will be generated. The student logs in with their phone and that CUID."}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
@@ -331,13 +378,34 @@ function StudentsPage() {
               onChange={(v) => setForm({ ...form, parent_phone: v })}
               error={errors.parent_phone}
             />
-            <FieldInput
-              id="batch"
-              label="Batch"
-              value={form.batch}
-              onChange={(v) => setForm({ ...form, batch: v })}
-              error={errors.batch}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="batch">Batch</Label>
+              {batches.length === 0 ? (
+                <Input
+                  id="batch"
+                  value={form.batch}
+                  onChange={(e) => setForm({ ...form, batch: e.target.value })}
+                  placeholder="Create batches first"
+                />
+              ) : (
+                <Select
+                  value={form.batch}
+                  onValueChange={(v) => setForm({ ...form, batch: v })}
+                >
+                  <SelectTrigger id="batch">
+                    <SelectValue placeholder="Select a batch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {batches.map((b) => (
+                      <SelectItem key={b.name} value={b.name}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {errors.batch && <p className="text-xs text-destructive">{errors.batch}</p>}
+            </div>
             <FieldInput
               id="admission_date"
               label="Admission Date"
@@ -367,7 +435,7 @@ function StudentsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete student?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone.
+              This will permanently delete the student record and their login. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -376,6 +444,51 @@ function StudentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={!!credentialsDialog}
+        onOpenChange={(o) => !o && setCredentialsDialog(null)}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Student login credentials</DialogTitle>
+            <DialogDescription>
+              Share these with the student. They will use these to sign in.
+            </DialogDescription>
+          </DialogHeader>
+          {credentialsDialog && (
+            <div className="space-y-3">
+              <CredentialRow label="CUID" value={credentialsDialog.cuid} />
+              <CredentialRow label="Phone" value={credentialsDialog.phone} />
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setCredentialsDialog(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function CredentialRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-md border p-3">
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="font-mono font-medium">{value}</p>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => {
+          navigator.clipboard.writeText(value);
+          toast.success(`${label} copied`);
+        }}
+      >
+        <Copy className="h-4 w-4" />
+      </Button>
     </div>
   );
 }
