@@ -90,6 +90,7 @@ export type Database = {
           id: string
           notes: string | null
           paid_amount: number
+          reset_interval: string
           student_id: string
           total_amount: number
           updated_at: string
@@ -101,6 +102,7 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_amount?: number
+          reset_interval?: string
           student_id: string
           total_amount?: number
           updated_at?: string
@@ -112,6 +114,7 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_amount?: number
+          reset_interval?: string
           student_id?: string
           total_amount?: number
           updated_at?: string

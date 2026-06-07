@@ -1,0 +1,1 @@
+ALTER TABLE public.fees ADD COLUMN IF NOT EXISTS reset_interval text NOT NULL DEFAULT 'none' CHECK (reset_interval IN ('none','monthly','quarterly','yearly'));
