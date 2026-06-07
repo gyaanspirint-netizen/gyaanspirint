@@ -362,3 +362,99 @@ function AdminAttendance() {
     </div>
   );
 }
+
+function StudentAttendance() {
+  const [rows, setRows] = useState<AttendanceRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) {
+        setLoading(false);
+        return;
+      }
+      const { data: student } = await supabase
+        .from("students")
+        .select("id")
+        .eq("user_id", u.user.id)
+        .maybeSingle();
+      if (!student) {
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("id, student_id, date, status")
+        .eq("student_id", student.id)
+        .order("date", { ascending: false });
+      if (error) toast.error(error.message);
+      setRows(data ?? []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const present = rows.filter((r) => r.status === "present").length;
+  const absent = rows.filter((r) => r.status === "absent").length;
+  const total = present + absent;
+  const pct = total === 0 ? 0 : Math.round((present / total) * 100);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">My Attendance</h1>
+        <p className="text-muted-foreground">Your attendance record.</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Percentage</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{pct}%</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Present</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{present}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Absent</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{absent}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Days</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{total}</div></CardContent>
+        </Card>
+      </div>
+      <Card>
+        <CardHeader><CardTitle>History</CardTitle></CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No attendance records yet.</p>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>{format(new Date(r.date), "PPP")}</TableCell>
+                      <TableCell>
+                        {r.status === "present" ? <Badge>Present</Badge> : <Badge variant="destructive">Absent</Badge>}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
