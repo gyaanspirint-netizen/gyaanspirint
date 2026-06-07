@@ -8,13 +8,7 @@ import { createStudent, deleteStudent } from "@/lib/students.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -388,21 +382,35 @@ function StudentsPage() {
                   placeholder="Create batches first"
                 />
               ) : (
-                <Select
-                  value={form.batch}
-                  onValueChange={(v) => setForm({ ...form, batch: v })}
-                >
-                  <SelectTrigger id="batch">
-                    <SelectValue placeholder="Select a batch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {batches.map((b) => (
-                      <SelectItem key={b.name} value={b.name}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="rounded-md border p-3 space-y-2 max-h-48 overflow-y-auto">
+                  <p className="text-xs text-muted-foreground">
+                    Select one or more batches
+                  </p>
+                  {batches.map((b) => {
+                    const selected = form.batch
+                      .split(",")
+                      .map((x) => x.trim())
+                      .filter(Boolean);
+                    const isOn = selected.includes(b.name);
+                    return (
+                      <label
+                        key={b.name}
+                        className="flex items-center gap-2 text-sm cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={isOn}
+                          onCheckedChange={(c) => {
+                            const next = c
+                              ? Array.from(new Set([...selected, b.name]))
+                              : selected.filter((x) => x !== b.name);
+                            setForm({ ...form, batch: next.join(", ") });
+                          }}
+                        />
+                        <span>{b.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               )}
               {errors.batch && <p className="text-xs text-destructive">{errors.batch}</p>}
             </div>

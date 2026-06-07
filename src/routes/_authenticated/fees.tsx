@@ -47,7 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Plus, Trash2, Wallet } from "lucide-react";
+import { Pencil, Plus, RotateCcw, Trash2, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/fees")({
   component: FeesPage,
@@ -61,6 +61,7 @@ type Fee = {
   paid_amount: number;
   due_date: string;
   notes: string | null;
+  reset_interval: "none" | "monthly" | "quarterly" | "yearly";
 };
 
 const schema = z.object({
@@ -69,6 +70,7 @@ const schema = z.object({
   paid_amount: z.coerce.number().min(0, "Must be >= 0"),
   due_date: z.string().min(1, "Due date required"),
   notes: z.string().optional(),
+  reset_interval: z.enum(["none", "monthly", "quarterly", "yearly"]),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -79,6 +81,7 @@ const empty: FormData = {
   paid_amount: 0,
   due_date: "",
   notes: "",
+  reset_interval: "none",
 };
 
 function statusOf(f: Fee) {
@@ -112,7 +115,7 @@ function AdminFees() {
       supabase.from("students").select("id, name, batch").order("name"),
       supabase
         .from("fees")
-        .select("id, student_id, total_amount, paid_amount, due_date, notes")
+        .select("id, student_id, total_amount, paid_amount, due_date, notes, reset_interval")
         .order("due_date", { ascending: true }),
     ]);
     if (s.error) toast.error(s.error.message);
@@ -123,6 +126,7 @@ function AdminFees() {
         ...r,
         total_amount: Number(r.total_amount),
         paid_amount: Number(r.paid_amount),
+        reset_interval: (r.reset_interval ?? "none") as Fee["reset_interval"],
       })),
     );
     setLoading(false);
@@ -147,6 +151,7 @@ function AdminFees() {
       paid_amount: fee.paid_amount,
       due_date: fee.due_date,
       notes: fee.notes ?? "",
+      reset_interval: fee.reset_interval ?? "none",
     });
     setErrors({});
     setDialogOpen(true);
@@ -195,6 +200,25 @@ function AdminFees() {
     if (error) return toast.error(error.message);
     toast.success("Fee deleted");
     setDeleteId(null);
+    load();
+  };
+
+  const resetCycle = async (f: Fee) => {
+    if (f.reset_interval === "none") {
+      toast.error("Set a reset interval first (monthly/quarterly/yearly).");
+      return;
+    }
+    const months =
+      f.reset_interval === "monthly" ? 1 : f.reset_interval === "quarterly" ? 3 : 12;
+    const next = new Date(f.due_date);
+    next.setMonth(next.getMonth() + months);
+    const nextDue = next.toISOString().slice(0, 10);
+    const { error } = await supabase
+      .from("fees")
+      .update({ paid_amount: 0, due_date: nextDue })
+      .eq("id", f.id);
+    if (error) return toast.error(error.message);
+    toast.success(`Cycle reset. New due date: ${format(next, "PPP")}`);
     load();
   };
 
@@ -282,6 +306,7 @@ function AdminFees() {
                     <TableHead>Paid</TableHead>
                     <TableHead>Pending</TableHead>
                     <TableHead>Due Date</TableHead>
+                    <TableHead>Cycle</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -303,9 +328,23 @@ function AdminFees() {
                           {format(new Date(f.due_date), "PPP")}
                         </TableCell>
                         <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {f.reset_interval}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <Badge variant={status.variant}>{status.label}</Badge>
                         </TableCell>
                         <TableCell className="text-right space-x-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            title="Reset cycle"
+                            onClick={() => resetCycle(f)}
+                            disabled={f.reset_interval === "none"}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="icon"
@@ -406,6 +445,28 @@ function AdminFees() {
               {errors.due_date && (
                 <p className="text-sm text-destructive mt-1">{errors.due_date}</p>
               )}
+            </div>
+            <div>
+              <Label>Reset Cycle</Label>
+              <Select
+                value={form.reset_interval}
+                onValueChange={(v) =>
+                  setForm({ ...form, reset_interval: v as FormData["reset_interval"] })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No reset (one-time)</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly (3 months)</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Use the Reset button on the row to roll the cycle forward when due.
+              </p>
             </div>
             <div>
               <Label htmlFor="notes">Notes (optional)</Label>
