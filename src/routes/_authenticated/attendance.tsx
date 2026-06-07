@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,10 +57,15 @@ type StudentStats = Student & {
 function AttendancePage() {
   const { role, loading: authLoading } = useAuth();
 
-  if (authLoading) return null;
-  if (role !== "admin") return <Navigate to="/student" replace />;
+  if (authLoading || role === null) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading...
+      </div>
+    );
+  }
 
-  return <AdminAttendance />;
+  return role === "admin" ? <AdminAttendance /> : <StudentAttendance />;
 }
 
 function AdminAttendance() {
