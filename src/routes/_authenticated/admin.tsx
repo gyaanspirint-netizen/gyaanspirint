@@ -29,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminDashboard() {
   const { user, role } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [adminName, setAdminName] = useState<string>("");
   const [totalStudents, setTotalStudents] = useState(0);
   const [presentToday, setPresentToday] = useState(0);
   const [absentToday, setAbsentToday] = useState(0);
@@ -40,7 +41,7 @@ function AdminDashboard() {
     if (role !== "admin") return;
     (async () => {
       const today = format(new Date(), "yyyy-MM-dd");
-      const [studentsRes, presentRes, absentRes, testsRes] = await Promise.all([
+      const [studentsRes, presentRes, absentRes, testsRes, profileRes] = await Promise.all([
         supabase.from("students").select("id", { count: "exact", head: true }),
         supabase
           .from("attendance")
@@ -58,14 +59,16 @@ function AdminDashboard() {
           .gte("test_date", today)
           .order("test_date", { ascending: true })
           .limit(5),
+        supabase.from("profiles").select("full_name").eq("id", user?.id ?? "").maybeSingle(),
       ]);
       setTotalStudents(studentsRes.count ?? 0);
       setPresentToday(presentRes.count ?? 0);
       setAbsentToday(absentRes.count ?? 0);
       setUpcomingTests(testsRes.data ?? []);
+      setAdminName(profileRes.data?.full_name ?? "");
       setLoading(false);
     })();
-  }, [role]);
+  }, [role, user]);
 
   if (role === null) {
     return (
@@ -108,7 +111,7 @@ function AdminDashboard() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""} — manage your coaching at a glance.
+          Welcome back{adminName ? `, ${adminName}` : user?.email ? `, ${user.email.split("@")[0]}` : ""} — manage your coaching at a glance.
         </p>
       </div>
 
