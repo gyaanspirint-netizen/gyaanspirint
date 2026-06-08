@@ -20,6 +20,7 @@ export type Database = {
           date: string
           id: string
           marked_by: string | null
+          owner_id: string
           status: Database["public"]["Enums"]["attendance_status"]
           student_id: string
           updated_at: string
@@ -29,6 +30,7 @@ export type Database = {
           date?: string
           id?: string
           marked_by?: string | null
+          owner_id: string
           status: Database["public"]["Enums"]["attendance_status"]
           student_id: string
           updated_at?: string
@@ -38,6 +40,7 @@ export type Database = {
           date?: string
           id?: string
           marked_by?: string | null
+          owner_id?: string
           status?: Database["public"]["Enums"]["attendance_status"]
           student_id?: string
           updated_at?: string
@@ -59,6 +62,7 @@ export type Database = {
           end_time: string
           id: string
           name: string
+          owner_id: string
           start_time: string
           updated_at: string
         }
@@ -68,6 +72,7 @@ export type Database = {
           end_time: string
           id?: string
           name: string
+          owner_id: string
           start_time: string
           updated_at?: string
         }
@@ -77,6 +82,7 @@ export type Database = {
           end_time?: string
           id?: string
           name?: string
+          owner_id?: string
           start_time?: string
           updated_at?: string
         }
@@ -89,6 +95,7 @@ export type Database = {
           due_date: string
           id: string
           notes: string | null
+          owner_id: string
           paid_amount: number
           reset_interval: string
           student_id: string
@@ -101,6 +108,7 @@ export type Database = {
           due_date: string
           id?: string
           notes?: string | null
+          owner_id: string
           paid_amount?: number
           reset_interval?: string
           student_id: string
@@ -113,6 +121,7 @@ export type Database = {
           due_date?: string
           id?: string
           notes?: string | null
+          owner_id?: string
           paid_amount?: number
           reset_interval?: string
           student_id?: string
@@ -122,6 +131,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fees_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      homework: {
+        Row: {
+          assigned_date: string
+          created_at: string
+          done: boolean
+          id: string
+          note: string
+          owner_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_date?: string
+          created_at?: string
+          done?: boolean
+          id?: string
+          note: string
+          owner_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_date?: string
+          created_at?: string
+          done?: boolean
+          id?: string
+          note?: string
+          owner_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -163,6 +213,7 @@ export type Database = {
           father_name: string
           id: string
           name: string
+          owner_id: string
           parent_phone: string
           student_phone: string
           updated_at: string
@@ -177,6 +228,7 @@ export type Database = {
           father_name: string
           id?: string
           name: string
+          owner_id: string
           parent_phone: string
           student_phone: string
           updated_at?: string
@@ -191,6 +243,7 @@ export type Database = {
           father_name?: string
           id?: string
           name?: string
+          owner_id?: string
           parent_phone?: string
           student_phone?: string
           updated_at?: string
@@ -198,12 +251,61 @@ export type Database = {
         }
         Relationships: []
       }
+      test_marks: {
+        Row: {
+          created_at: string
+          id: string
+          marks: number | null
+          max_marks: number | null
+          owner_id: string
+          student_id: string
+          test_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marks?: number | null
+          max_marks?: number | null
+          owner_id: string
+          student_id: string
+          test_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marks?: number | null
+          max_marks?: number | null
+          owner_id?: string
+          student_id?: string
+          test_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_marks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_marks_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tests: {
         Row: {
           batch: string
           created_at: string
           created_by: string | null
           id: string
+          owner_id: string
           subject: string
           test_date: string
           test_name: string
@@ -214,6 +316,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          owner_id: string
           subject: string
           test_date: string
           test_name: string
@@ -224,6 +327,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          owner_id?: string
           subject?: string
           test_date?: string
           test_name?: string
@@ -257,6 +361,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_owner_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -2,7 +2,6 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Users,
-  BookOpen,
   Calendar,
   ClipboardCheck,
   FileText,
@@ -11,6 +10,7 @@ import {
   Settings,
   LogOut,
   GraduationCap,
+  NotebookPen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,7 +32,7 @@ const adminItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Students", url: "/students", icon: Users },
   { title: "Batches", url: "/batches", icon: CalendarClock },
-  { title: "Courses", url: "/courses", icon: BookOpen },
+  { title: "Homework", url: "/homework", icon: NotebookPen },
   { title: "Schedule", url: "/schedule", icon: Calendar },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
   { title: "Tests", url: "/tests", icon: FileText },
@@ -41,7 +41,7 @@ const adminItems = [
 
 const studentItems = [
   { title: "Dashboard", url: "/student", icon: LayoutDashboard },
-  { title: "My Courses", url: "/courses", icon: BookOpen },
+  { title: "Homework", url: "/homework", icon: NotebookPen },
   { title: "Schedule", url: "/schedule", icon: Calendar },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
   { title: "Tests", url: "/tests", icon: FileText },

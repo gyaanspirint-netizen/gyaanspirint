@@ -15,6 +15,15 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Wallet,
   Loader2,
   UserCheck,
@@ -33,6 +42,7 @@ export const Route = createFileRoute("/_authenticated/student")({
 function StudentDashboard() {
   const { user, role } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [feePopup, setFeePopup] = useState(false);
   const [student, setStudent] = useState<{
     id: string;
     name: string;
@@ -84,13 +94,14 @@ function StudentDashboard() {
 
       if (studentRes.data) setStudent(studentRes.data);
       if (!feesRes.error) {
-        setFees(
-          (feesRes.data ?? []).map((r) => ({
+        const mapped = (feesRes.data ?? []).map((r) => ({
             ...r,
             total_amount: Number(r.total_amount),
             paid_amount: Number(r.paid_amount),
-          })),
-        );
+        }));
+        setFees(mapped);
+        const hasPending = mapped.some((f) => f.total_amount - f.paid_amount > 0);
+        if (hasPending) setFeePopup(true);
       }
       if (!attendanceRes.error) {
         setAttendance(
@@ -147,6 +158,21 @@ function StudentDashboard() {
 
   return (
     <div className="space-y-6">
+      <AlertDialog open={feePopup} onOpenChange={setFeePopup}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pending Fees</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have pending fees of ₹{pending.toFixed(2)}
+              {nextDue ? `, due ${format(new Date(nextDue.due_date), "PP")}` : ""}. Please pay soon.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setFeePopup(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Student Dashboard</h1>
         <p className="text-muted-foreground mt-1">

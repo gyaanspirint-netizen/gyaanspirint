@@ -144,7 +144,7 @@ function TestsPage() {
       const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("tests")
-        .insert({ ...parsed.data, created_by: userData.user?.id ?? null });
+        .insert({ ...parsed.data, created_by: userData.user?.id ?? null, owner_id: userData.user?.id ?? "" });
       setSaving(false);
       if (error) return toast.error(error.message);
       toast.success("Test added");
