@@ -130,7 +130,10 @@ function BatchesPage() {
       if (error) return toast.error(error.message);
       toast.success("Batch updated");
     } else {
-      const { error } = await supabase.from("batches").insert(parsed.data);
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("batches")
+        .insert({ ...parsed.data, owner_id: u.user?.id ?? "", created_by: u.user?.id ?? null });
       setSaving(false);
       if (error) return toast.error(error.message);
       toast.success("Batch added");
