@@ -86,6 +86,7 @@ export const createStudent = createServerFn({ method: "POST" })
       cuid,
       user_id: newUserId,
       created_by: userId,
+      owner_id: userId,
     });
     if (insertErr) {
       // Roll back the auth user if student insert fails
