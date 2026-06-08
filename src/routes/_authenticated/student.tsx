@@ -15,6 +15,15 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Wallet,
   Loader2,
   UserCheck,
@@ -33,6 +42,7 @@ export const Route = createFileRoute("/_authenticated/student")({
 function StudentDashboard() {
   const { user, role } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [feePopup, setFeePopup] = useState(false);
   const [student, setStudent] = useState<{
     id: string;
     name: string;
@@ -84,13 +94,14 @@ function StudentDashboard() {
 
       if (studentRes.data) setStudent(studentRes.data);
       if (!feesRes.error) {
-        setFees(
-          (feesRes.data ?? []).map((r) => ({
+        const mapped = (feesRes.data ?? []).map((r) => ({
             ...r,
             total_amount: Number(r.total_amount),
             paid_amount: Number(r.paid_amount),
-          })),
-        );
+        }));
+        setFees(mapped);
+        const hasPending = mapped.some((f) => f.total_amount - f.paid_amount > 0);
+        if (hasPending) setFeePopup(true);
       }
       if (!attendanceRes.error) {
         setAttendance(
