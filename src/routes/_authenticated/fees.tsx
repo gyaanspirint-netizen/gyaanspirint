@@ -185,7 +185,7 @@ function AdminFees() {
       const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("fees")
-        .insert({ ...parsed.data, created_by: u.user?.id ?? null });
+        .insert({ ...parsed.data, created_by: u.user?.id ?? null, owner_id: u.user?.id ?? "" });
       setSaving(false);
       if (error) return toast.error(error.message);
       toast.success("Fee added");
