@@ -158,6 +158,21 @@ function StudentDashboard() {
 
   return (
     <div className="space-y-6">
+      <AlertDialog open={feePopup} onOpenChange={setFeePopup}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pending Fees</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have pending fees of ₹{pending.toFixed(2)}
+              {nextDue ? `, due ${format(new Date(nextDue.due_date), "PP")}` : ""}. Please pay soon.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setFeePopup(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Student Dashboard</h1>
         <p className="text-muted-foreground mt-1">
