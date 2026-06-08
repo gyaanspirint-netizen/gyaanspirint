@@ -140,6 +140,7 @@ function AdminAttendance() {
         date,
         status,
         marked_by: userData.user?.id ?? null,
+        owner_id: userData.user?.id ?? "",
       },
       { onConflict: "student_id,date" },
     );
