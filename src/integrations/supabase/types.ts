@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       attendance: {
         Row: {
+          batch: string
           created_at: string
           date: string
           id: string
@@ -26,6 +27,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          batch?: string
           created_at?: string
           date?: string
           id?: string
@@ -36,6 +38,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          batch?: string
           created_at?: string
           date?: string
           id?: string
@@ -202,6 +205,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      schedule: {
+        Row: {
+          batch_id: string | null
+          created_at: string
+          end_time: string
+          id: string
+          notes: string | null
+          owner_id: string
+          schedule_date: string
+          start_time: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          owner_id: string
+          schedule_date: string
+          start_time: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          schedule_date?: string
+          start_time?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
