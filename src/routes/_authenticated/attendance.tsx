@@ -29,6 +29,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Check, X, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/attendance")({
   component: AttendancePage,
@@ -45,6 +46,7 @@ type AttendanceRow = {
   student_id: string;
   date: string;
   status: "present" | "absent";
+  batch?: string;
 };
 
 type StudentStats = Student & {
@@ -70,6 +72,8 @@ function AttendancePage() {
 
 function AdminAttendance() {
   const [students, setStudents] = useState<Student[]>([]);
+  const [batchList, setBatchList] = useState<string[]>([]);
+  const [selectedBatch, setSelectedBatch] = useState<string>("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [todayMap, setTodayMap] = useState<Record<string, "present" | "absent">>({});
   const [history, setHistory] = useState<AttendanceRow[]>([]);
@@ -86,13 +90,20 @@ function AdminAttendance() {
       return;
     }
     setStudents(data ?? []);
+    const all = new Set<string>();
+    (data ?? []).forEach((s) => s.batch.split(",").map((b) => b.trim()).filter(Boolean).forEach((b) => all.add(b)));
+    const list = Array.from(all).sort();
+    setBatchList(list);
+    if (list.length && !selectedBatch) setSelectedBatch(list[0]);
   };
 
-  const loadForDate = async (d: string) => {
+  const loadForDate = async (d: string, batch: string) => {
+    if (!batch) { setTodayMap({}); return; }
     const { data, error } = await supabase
       .from("attendance")
       .select("id, student_id, date, status")
-      .eq("date", d);
+      .eq("date", d)
+      .eq("batch", batch);
     if (error) {
       toast.error(error.message);
       return;
@@ -107,7 +118,7 @@ function AdminAttendance() {
   const loadHistory = async () => {
     const { data, error } = await supabase
       .from("attendance")
-      .select("id, student_id, date, status")
+      .select("id, student_id, date, status, batch")
       .order("date", { ascending: false })
       .limit(1000);
     if (error) {
@@ -120,18 +131,20 @@ function AdminAttendance() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await Promise.all([loadStudents(), loadForDate(date), loadHistory()]);
+      await loadStudents();
+      await loadHistory();
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    loadForDate(date);
+    loadForDate(date, selectedBatch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date]);
+  }, [date, selectedBatch]);
 
   const mark = async (studentId: string, status: "present" | "absent") => {
+    if (!selectedBatch) { toast.error("Select a batch"); return; }
     setSavingId(studentId);
     const { data: userData } = await supabase.auth.getUser();
     const { error } = await supabase.from("attendance").upsert(
@@ -139,10 +152,11 @@ function AdminAttendance() {
         student_id: studentId,
         date,
         status,
+        batch: selectedBatch,
         marked_by: userData.user?.id ?? null,
         owner_id: userData.user?.id ?? "",
       },
-      { onConflict: "student_id,date" },
+      { onConflict: "student_id,date,batch" },
     );
     setSavingId(null);
     if (error) {
@@ -153,6 +167,11 @@ function AdminAttendance() {
     toast.success(`Marked ${status}`);
     loadHistory();
   };
+
+  const studentsInBatch = useMemo(
+    () => students.filter((s) => s.batch.split(",").map((b) => b.trim()).includes(selectedBatch)),
+    [students, selectedBatch],
+  );
 
   const stats: StudentStats[] = useMemo(() => {
     return students.map((s) => {
@@ -190,7 +209,7 @@ function AdminAttendance() {
               <CardTitle>Mark Attendance</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-end gap-3 max-w-xs">
+              <div className="flex flex-wrap items-end gap-3">
                 <div className="flex-1">
                   <Label htmlFor="date">Date</Label>
                   <Input
@@ -200,15 +219,28 @@ function AdminAttendance() {
                     onChange={(e) => setDate(e.target.value)}
                   />
                 </div>
+                <div className="flex-1 min-w-[160px]">
+                  <Label>Batch</Label>
+                  <Select value={selectedBatch} onValueChange={setSelectedBatch}>
+                    <SelectTrigger><SelectValue placeholder="Pick batch" /></SelectTrigger>
+                    <SelectContent>
+                      {batchList.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {loading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              ) : students.length === 0 ? (
+              ) : batchList.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">
                   No students yet. Add students first.
+                </p>
+              ) : studentsInBatch.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">
+                  No students in this batch.
                 </p>
               ) : (
                 <div className="rounded-md border overflow-x-auto">
@@ -222,14 +254,14 @@ function AdminAttendance() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {students.map((s) => {
+                      {studentsInBatch.map((s) => {
                         const current = todayMap[s.id];
                         return (
                           <TableRow key={s.id}>
                             <TableCell className="font-medium">
                               {s.name}
                             </TableCell>
-                            <TableCell>{s.batch}</TableCell>
+                            <TableCell>{selectedBatch}</TableCell>
                             <TableCell>
                               {current === "present" ? (
                                 <Badge>Present</Badge>
@@ -291,6 +323,7 @@ function AdminAttendance() {
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Student</TableHead>
+                        <TableHead>Batch</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -299,6 +332,7 @@ function AdminAttendance() {
                         <TableRow key={r.id}>
                           <TableCell>{r.date}</TableCell>
                           <TableCell>{studentName(r.student_id)}</TableCell>
+                          <TableCell>{r.batch || "—"}</TableCell>
                           <TableCell>
                             {r.status === "present" ? (
                               <Badge>Present</Badge>
