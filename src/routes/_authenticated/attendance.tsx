@@ -421,7 +421,7 @@ function StudentAttendance() {
       }
       const { data, error } = await supabase
         .from("attendance")
-        .select("id, student_id, date, status")
+        .select("id, student_id, date, status, batch")
         .eq("student_id", student.id)
         .order("date", { ascending: false });
       if (error) toast.error(error.message);
@@ -472,6 +472,7 @@ function StudentAttendance() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
+                    <TableHead>Batch</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -479,6 +480,7 @@ function StudentAttendance() {
                   {rows.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>{format(new Date(r.date), "PPP")}</TableCell>
+                      <TableCell>{r.batch || "—"}</TableCell>
                       <TableCell>
                         {r.status === "present" ? <Badge>Present</Badge> : <Badge variant="destructive">Absent</Badge>}
                       </TableCell>
