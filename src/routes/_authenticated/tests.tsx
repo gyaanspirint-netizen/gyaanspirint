@@ -41,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pencil, Plus, Trash2, CalendarDays } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/tests")({
   component: TestsPage,
@@ -53,6 +54,9 @@ type Test = {
   batch: string;
   test_date: string;
 };
+
+type StudentLite = { id: string; name: string; batch: string };
+type MarkRow = { id?: string; student_id: string; marks: string; max_marks: string };
 
 const schema = z.object({
   test_name: z.string().min(1, "Test name is required"),
@@ -83,6 +87,16 @@ function TestsPage() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  // Marks dialog state
+  const [marksOpen, setMarksOpen] = useState(false);
+  const [marksTest, setMarksTest] = useState<Test | null>(null);
+  const [marksRows, setMarksRows] = useState<MarkRow[]>([]);
+  const [marksStudents, setMarksStudents] = useState<StudentLite[]>([]);
+  const [marksSaving, setMarksSaving] = useState(false);
+
+  // Student view: own marks
+  const [myMarks, setMyMarks] = useState<Record<string, { marks: number; max_marks: number }>>({});
+
   const fetchTests = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -100,6 +114,75 @@ function TestsPage() {
   useEffect(() => {
     fetchTests();
   }, []);
+
+  // Load student's own marks
+  useEffect(() => {
+    if (role !== "student") return;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data: s } = await supabase.from("students").select("id").eq("user_id", u.user.id).maybeSingle();
+      if (!s) return;
+      const { data } = await supabase.from("test_marks").select("test_id, marks, max_marks").eq("student_id", s.id);
+      const map: Record<string, { marks: number; max_marks: number }> = {};
+      (data ?? []).forEach((r: any) => {
+        map[r.test_id] = { marks: Number(r.marks ?? 0), max_marks: Number(r.max_marks ?? 0) };
+      });
+      setMyMarks(map);
+    })();
+  }, [role]);
+
+  const openMarks = async (t: Test) => {
+    setMarksTest(t);
+    setMarksOpen(true);
+    const { data: studs } = await supabase.from("students").select("id, name, batch").order("name");
+    const inBatch = (studs ?? []).filter((s) =>
+      s.batch.split(",").map((b) => b.trim()).includes(t.batch),
+    );
+    setMarksStudents(inBatch);
+    const { data: existing } = await supabase
+      .from("test_marks")
+      .select("id, student_id, marks, max_marks")
+      .eq("test_id", t.id);
+    const map = new Map<string, { id: string; marks: string; max_marks: string }>();
+    (existing ?? []).forEach((m: any) =>
+      map.set(m.student_id, { id: m.id, marks: m.marks?.toString() ?? "", max_marks: m.max_marks?.toString() ?? "" }),
+    );
+    setMarksRows(
+      inBatch.map((s) => ({
+        student_id: s.id,
+        id: map.get(s.id)?.id,
+        marks: map.get(s.id)?.marks ?? "",
+        max_marks: map.get(s.id)?.max_marks ?? "",
+      })),
+    );
+  };
+
+  const saveMarks = async () => {
+    if (!marksTest) return;
+    setMarksSaving(true);
+    const { data: u } = await supabase.auth.getUser();
+    const ownerId = u.user?.id ?? "";
+    const payload = marksRows
+      .filter((r) => r.marks !== "" || r.max_marks !== "")
+      .map((r) => ({
+        test_id: marksTest.id,
+        student_id: r.student_id,
+        owner_id: ownerId,
+        marks: r.marks === "" ? null : Number(r.marks),
+        max_marks: r.max_marks === "" ? null : Number(r.max_marks),
+      }));
+    if (payload.length > 0) {
+      const { error } = await supabase.from("test_marks").upsert(payload, { onConflict: "test_id,student_id" });
+      if (error) {
+        setMarksSaving(false);
+        return toast.error(error.message);
+      }
+    }
+    setMarksSaving(false);
+    setMarksOpen(false);
+    toast.success("Marks saved");
+  };
 
   const openAdd = () => {
     setEditing(null);
@@ -178,8 +261,18 @@ function TestsPage() {
       <TableCell>{t.subject}</TableCell>
       <TableCell>{t.batch}</TableCell>
       <TableCell>{format(new Date(t.test_date), "PPP")}</TableCell>
+      {!isAdmin && (
+        <TableCell>
+          {myMarks[t.id]
+            ? `${myMarks[t.id].marks} / ${myMarks[t.id].max_marks}`
+            : <span className="text-muted-foreground">—</span>}
+        </TableCell>
+      )}
       {isAdmin && (
         <TableCell className="text-right space-x-2">
+          <Button variant="outline" size="icon" onClick={() => openMarks(t)} title="Assign Marks">
+            <ClipboardList className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="icon" onClick={() => openEdit(t)}>
             <Pencil className="h-4 w-4" />
           </Button>
@@ -239,6 +332,7 @@ function TestsPage() {
                     <TableHead>Batch</TableHead>
                     <TableHead>Date</TableHead>
                     {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                    {!isAdmin && <TableHead>My Marks</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>{upcoming.map(renderRow)}</TableBody>
@@ -263,6 +357,7 @@ function TestsPage() {
                     <TableHead>Batch</TableHead>
                     <TableHead>Date</TableHead>
                     {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                    {!isAdmin && <TableHead>My Marks</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>{past.map(renderRow)}</TableBody>
@@ -356,6 +451,53 @@ function TestsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={marksOpen} onOpenChange={setMarksOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Assign Marks{marksTest ? ` — ${marksTest.test_name}` : ""}</DialogTitle>
+          </DialogHeader>
+          {marksStudents.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No students in this batch.</p>
+          ) : (
+            <div className="rounded-md border max-h-[400px] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead className="w-32">Marks</TableHead>
+                    <TableHead className="w-32">Max</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {marksRows.map((r, i) => {
+                    const s = marksStudents.find((x) => x.id === r.student_id);
+                    return (
+                      <TableRow key={r.student_id}>
+                        <TableCell>{s?.name}</TableCell>
+                        <TableCell>
+                          <Input type="number" value={r.marks} onChange={(e) => {
+                            const next = [...marksRows]; next[i] = { ...r, marks: e.target.value }; setMarksRows(next);
+                          }} />
+                        </TableCell>
+                        <TableCell>
+                          <Input type="number" value={r.max_marks} onChange={(e) => {
+                            const next = [...marksRows]; next[i] = { ...r, max_marks: e.target.value }; setMarksRows(next);
+                          }} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMarksOpen(false)}>Cancel</Button>
+            <Button onClick={saveMarks} disabled={marksSaving}>{marksSaving ? "Saving..." : "Save Marks"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
