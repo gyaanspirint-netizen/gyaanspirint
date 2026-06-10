@@ -14,7 +14,7 @@ import { GraduationCap } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
-    meta: [{ title: "Sign in — Coaching Hub" }],
+    meta: [{ title: "Sign in — Institute Manager" }],
   }),
   component: AuthPage,
 });
@@ -92,7 +92,7 @@ function AuthPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-6 text-primary">
           <GraduationCap className="h-7 w-7" />
-          <span className="text-lg font-semibold">Coaching Hub</span>
+          <span className="text-lg font-semibold">Institute Manager</span>
         </div>
         <Card>
           <CardHeader>

@@ -69,7 +69,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5 text-primary">
           <GraduationCap className="h-5 w-5 shrink-0" />
-          {!collapsed && <span className="font-semibold">Coaching Hub</span>}
+          {!collapsed && <span className="font-semibold">Institute Manager</span>}
         </div>
       </SidebarHeader>
       <SidebarContent>
