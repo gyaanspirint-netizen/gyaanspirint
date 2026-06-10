@@ -32,6 +32,8 @@ import {
   Clock,
   FileText,
   Percent,
+  Users,
+  BookOpen,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/student")({
@@ -55,6 +57,24 @@ function StudentDashboard() {
   const [tests, setTests] = useState<
     { id: string; test_name: string; subject: string; batch: string; test_date: string }[]
   >([]);
+  const [batches, setBatches] = useState<
+    {
+      id: string;
+      name: string;
+      course_name: string | null;
+      start_date: string | null;
+      end_date: string | null;
+      start_time: string;
+      end_time: string;
+      schedule_type: string;
+      schedule_days: string[];
+      status: string;
+    }[]
+  >([]);
+  const [teachers, setTeachers] = useState<
+    { id: string; batch_id: string; teacher_name: string; subject: string; email: string }[]
+  >([]);
+  const [scheduleCounts, setScheduleCounts] = useState<{ total: number; upcoming: number }>({ total: 0, upcoming: 0 });
   const [fees, setFees] = useState<
     {
       id: string;
@@ -93,6 +113,33 @@ function StudentDashboard() {
       ]);
 
       if (studentRes.data) setStudent(studentRes.data);
+
+      const batchNames = (studentRes.data?.batch ?? "")
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      if (batchNames.length > 0) {
+        const { data: bs } = await supabase
+          .from("batches")
+          .select("id, name, course_name, start_date, end_date, start_time, end_time, schedule_type, schedule_days, status")
+          .in("name", batchNames);
+        const myBatches = (bs ?? []) as typeof batches;
+        setBatches(myBatches);
+        if (myBatches.length > 0) {
+          const ids = myBatches.map((b) => b.id);
+          const [tRes, schRes] = await Promise.all([
+            supabase.from("batch_teachers").select("*").in("batch_id", ids),
+            supabase.from("schedule").select("id, schedule_date").in("batch_id", ids),
+          ]);
+          setTeachers((tRes.data ?? []) as typeof teachers);
+          const all = schRes.data ?? [];
+          setScheduleCounts({
+            total: all.length,
+            upcoming: all.filter((s) => s.schedule_date >= today).length,
+          });
+        }
+      }
+
       if (!feesRes.error) {
         const mapped = (feesRes.data ?? []).map((r) => ({
             ...r,
