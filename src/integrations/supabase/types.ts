@@ -509,6 +509,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_admin_role: { Args: never; Returns: undefined }
       current_owner_id: { Args: never; Returns: string }
       has_role: {
         Args: {
