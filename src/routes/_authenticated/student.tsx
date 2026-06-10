@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/student")({
-  head: () => ({ meta: [{ title: "Student Dashboard — Coaching Hub" }] }),
+  head: () => ({ meta: [{ title: "Student Dashboard — Institute Manager" }] }),
   component: StudentDashboard,
 });
 

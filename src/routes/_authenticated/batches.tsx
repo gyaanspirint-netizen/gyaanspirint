@@ -45,7 +45,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/batches")({
-  head: () => ({ meta: [{ title: "Batches — Coaching Hub" }] }),
+  head: () => ({ meta: [{ title: "Batches — Institute Manager" }] }),
   component: BatchesPage,
 });
 

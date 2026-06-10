@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Check, X, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/homework")({
-  head: () => ({ meta: [{ title: "Homework — Coaching Hub" }] }),
+  head: () => ({ meta: [{ title: "Homework — Institute Manager" }] }),
   component: HomeworkPage,
 });
 

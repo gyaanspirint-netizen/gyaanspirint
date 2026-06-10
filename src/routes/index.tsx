@@ -81,7 +81,7 @@ function Landing() {
       </main>
 
       <footer className="border-t px-6 py-6 text-center text-xs text-muted-foreground">
-        Institute Manager — Coaching Hub for owners and students.
+        Institute Manager — built for coaching institutes and tuition centers.
       </footer>
     </div>
   );
