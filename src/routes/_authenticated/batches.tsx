@@ -97,6 +97,7 @@ function BatchesPage() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teacherForm, setTeacherForm] = useState({ teacher_name: "", subject: "", email: "" });
+  const [teacherBatch, setTeacherBatch] = useState<Batch | null>(null);
 
   const fetchAll = async () => {
     setLoading(true);
