@@ -41,8 +41,8 @@ const STATUS_LABELS: Record<Ticket["status"], string> = {
   in_progress: "In Progress",
   resolved: "Resolved",
 };
-const STATUS_VARIANT: Record<Ticket["status"], "default" | "secondary" | "outline"> = {
-  open: "destructive" as never,
+const STATUS_VARIANT: Record<Ticket["status"], "default" | "secondary" | "destructive"> = {
+  open: "destructive",
   in_progress: "secondary",
   resolved: "default",
 };
