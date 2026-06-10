@@ -511,6 +511,7 @@ export type Database = {
     Functions: {
       claim_admin_role: { Args: never; Returns: undefined }
       current_owner_id: { Args: never; Returns: string }
+      current_student_batch_ids: { Args: never; Returns: string[] }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
