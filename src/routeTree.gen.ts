@@ -18,6 +18,7 @@ import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
 import { Route as AuthenticatedHomeworkRouteImport } from './routes/_authenticated/homework'
+import { Route as AuthenticatedHelpDeskRouteImport } from './routes/_authenticated/help-desk'
 import { Route as AuthenticatedFeesRouteImport } from './routes/_authenticated/fees'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBatchesRouteImport } from './routes/_authenticated/batches'
@@ -68,6 +69,11 @@ const AuthenticatedHomeworkRoute = AuthenticatedHomeworkRouteImport.update({
   path: '/homework',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHelpDeskRoute = AuthenticatedHelpDeskRouteImport.update({
+  id: '/help-desk',
+  path: '/help-desk',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedFeesRoute = AuthenticatedFeesRouteImport.update({
   id: '/fees',
   path: '/fees',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/batches': typeof AuthenticatedBatchesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/fees': typeof AuthenticatedFeesRoute
+  '/help-desk': typeof AuthenticatedHelpDeskRoute
   '/homework': typeof AuthenticatedHomeworkRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/batches': typeof AuthenticatedBatchesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/fees': typeof AuthenticatedFeesRoute
+  '/help-desk': typeof AuthenticatedHelpDeskRoute
   '/homework': typeof AuthenticatedHomeworkRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/_authenticated/batches': typeof AuthenticatedBatchesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/fees': typeof AuthenticatedFeesRoute
+  '/_authenticated/help-desk': typeof AuthenticatedHelpDeskRoute
   '/_authenticated/homework': typeof AuthenticatedHomeworkRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/batches'
     | '/dashboard'
     | '/fees'
+    | '/help-desk'
     | '/homework'
     | '/schedule'
     | '/settings'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/batches'
     | '/dashboard'
     | '/fees'
+    | '/help-desk'
     | '/homework'
     | '/schedule'
     | '/settings'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/_authenticated/batches'
     | '/_authenticated/dashboard'
     | '/_authenticated/fees'
+    | '/_authenticated/help-desk'
     | '/_authenticated/homework'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
@@ -261,6 +273,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeworkRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/help-desk': {
+      id: '/_authenticated/help-desk'
+      path: '/help-desk'
+      fullPath: '/help-desk'
+      preLoaderRoute: typeof AuthenticatedHelpDeskRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/fees': {
       id: '/_authenticated/fees'
       path: '/fees'
@@ -305,6 +324,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBatchesRoute: typeof AuthenticatedBatchesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeesRoute: typeof AuthenticatedFeesRoute
+  AuthenticatedHelpDeskRoute: typeof AuthenticatedHelpDeskRoute
   AuthenticatedHomeworkRoute: typeof AuthenticatedHomeworkRoute
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -319,6 +339,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBatchesRoute: AuthenticatedBatchesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeesRoute: AuthenticatedFeesRoute,
+  AuthenticatedHelpDeskRoute: AuthenticatedHelpDeskRoute,
   AuthenticatedHomeworkRoute: AuthenticatedHomeworkRoute,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -338,3 +359,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
