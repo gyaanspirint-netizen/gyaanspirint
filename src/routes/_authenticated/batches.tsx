@@ -40,6 +40,9 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/batches")({
   head: () => ({ meta: [{ title: "Batches — Coaching Hub" }] }),
@@ -51,15 +54,35 @@ type Batch = {
   name: string;
   start_time: string;
   end_time: string;
+  course_name: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  schedule_type: string;
+  schedule_days: string[];
+  status: string;
 };
+
+type Teacher = { id: string; batch_id: string; teacher_name: string; subject: string; email: string };
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required").max(50),
   start_time: z.string().min(1, "Start time is required"),
   end_time: z.string().min(1, "End time is required"),
-});
+  course_name: z.string().trim().max(100).optional().or(z.literal("")),
+  start_date: z.string().optional().or(z.literal("")),
+  end_date: z.string().optional().or(z.literal("")),
+  schedule_type: z.enum(["daily", "alternate", "custom"]),
+  schedule_days: z.array(z.string()),
+  status: z.enum(["active", "completed"]),
+}).refine((d) => d.end_time > d.start_time, { message: "End time must be after start time", path: ["end_time"] });
 type FormValues = z.infer<typeof schema>;
-const empty: FormValues = { name: "", start_time: "09:00", end_time: "10:00" };
+const empty: FormValues = {
+  name: "", start_time: "09:00", end_time: "10:00",
+  course_name: "", start_date: "", end_date: "",
+  schedule_type: "daily", schedule_days: [], status: "active",
+};
 
 function BatchesPage() {
   const { role } = useAuth();
@@ -72,6 +95,8 @@ function BatchesPage() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teacherForm, setTeacherForm] = useState({ teacher_name: "", subject: "", email: "" });
 
   const fetchAll = async () => {
     setLoading(true);
@@ -80,7 +105,7 @@ function BatchesPage() {
       .select("*")
       .order("start_time");
     if (error) toast.error(error.message);
-    setRows(data ?? []);
+    setRows((data ?? []) as Batch[]);
     // Count students per batch
     const { data: students } = await supabase.from("students").select("batch");
     const map: Record<string, number> = {};
@@ -88,6 +113,8 @@ function BatchesPage() {
       map[s.batch] = (map[s.batch] ?? 0) + 1;
     });
     setCounts(map);
+    const { data: ts } = await supabase.from("batch_teachers").select("*");
+    setTeachers((ts ?? []) as Teacher[]);
     setLoading(false);
   };
 
@@ -99,12 +126,24 @@ function BatchesPage() {
     setEditing(null);
     setForm(empty);
     setErrors({});
+    setTeacherForm({ teacher_name: "", subject: "", email: "" });
     setOpen(true);
   };
   const openEdit = (b: Batch) => {
     setEditing(b);
-    setForm({ name: b.name, start_time: b.start_time.slice(0, 5), end_time: b.end_time.slice(0, 5) });
+    setForm({
+      name: b.name,
+      start_time: b.start_time.slice(0, 5),
+      end_time: b.end_time.slice(0, 5),
+      course_name: b.course_name ?? "",
+      start_date: b.start_date ?? "",
+      end_date: b.end_date ?? "",
+      schedule_type: (b.schedule_type as FormValues["schedule_type"]) ?? "daily",
+      schedule_days: b.schedule_days ?? [],
+      status: (b.status as FormValues["status"]) ?? "active",
+    });
     setErrors({});
+    setTeacherForm({ teacher_name: "", subject: "", email: "" });
     setOpen(true);
   };
 
@@ -120,11 +159,23 @@ function BatchesPage() {
       setErrors(fe);
       return;
     }
+    const d = parsed.data;
+    const payload = {
+      name: d.name,
+      start_time: d.start_time,
+      end_time: d.end_time,
+      course_name: d.course_name || null,
+      start_date: d.start_date || null,
+      end_date: d.end_date || null,
+      schedule_type: d.schedule_type,
+      schedule_days: d.schedule_type === "custom" ? d.schedule_days : [],
+      status: d.status,
+    };
     setSaving(true);
     if (editing) {
       const { error } = await supabase
         .from("batches")
-        .update(parsed.data)
+        .update(payload)
         .eq("id", editing.id);
       setSaving(false);
       if (error) return toast.error(error.message);
@@ -133,12 +184,34 @@ function BatchesPage() {
       const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("batches")
-        .insert({ ...parsed.data, owner_id: u.user?.id ?? "", created_by: u.user?.id ?? null });
+        .insert({ ...payload, owner_id: u.user?.id ?? "", created_by: u.user?.id ?? null });
       setSaving(false);
       if (error) return toast.error(error.message);
       toast.success("Batch added");
     }
     setOpen(false);
+    fetchAll();
+  };
+
+  const addTeacher = async () => {
+    if (!editing) return toast.error("Save the batch first, then add teachers");
+    if (!teacherForm.teacher_name.trim()) return toast.error("Teacher name required");
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase.from("batch_teachers").insert({
+      batch_id: editing.id,
+      teacher_name: teacherForm.teacher_name.trim(),
+      subject: teacherForm.subject.trim(),
+      email: teacherForm.email.trim(),
+      owner_id: u.user?.id ?? "",
+    });
+    if (error) return toast.error(error.message);
+    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+    fetchAll();
+  };
+
+  const removeTeacher = async (id: string) => {
+    const { error } = await supabase.from("batch_teachers").delete().eq("id", id);
+    if (error) return toast.error(error.message);
     fetchAll();
   };
 
@@ -150,6 +223,13 @@ function BatchesPage() {
     toast.success("Batch deleted");
     fetchAll();
   };
+
+  const teacherCount = (batchId: string) => teachers.filter((t) => t.batch_id === batchId).length;
+  const currentTeachers = editing ? teachers.filter((t) => t.batch_id === editing.id) : [];
+  const scheduleLabel = (b: Batch) =>
+    b.schedule_type === "daily" ? "Daily"
+    : b.schedule_type === "alternate" ? "Alternate"
+    : (b.schedule_days?.length ? b.schedule_days.join(", ") : "Custom");
 
   if (role === null) {
     return (
@@ -193,8 +273,12 @@ function BatchesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
+                    <TableHead>Course</TableHead>
                     <TableHead>Start</TableHead>
                     <TableHead>End</TableHead>
+                    <TableHead>Schedule</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Teachers</TableHead>
                     <TableHead>Students</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -203,8 +287,16 @@ function BatchesPage() {
                   {rows.map((b) => (
                     <TableRow key={b.id}>
                       <TableCell className="font-medium">{b.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{b.course_name ?? "—"}</TableCell>
                       <TableCell>{b.start_time.slice(0, 5)}</TableCell>
                       <TableCell>{b.end_time.slice(0, 5)}</TableCell>
+                      <TableCell className="text-xs">{scheduleLabel(b)}</TableCell>
+                      <TableCell>
+                        <Badge variant={b.status === "active" ? "default" : "secondary"}>
+                          {b.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{teacherCount(b.id)}</TableCell>
                       <TableCell>{counts[b.name] ?? 0}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
@@ -226,7 +318,7 @@ function BatchesPage() {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[420px]">
+        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit batch" : "Add batch"}</DialogTitle>
             <DialogDescription>
@@ -242,6 +334,23 @@ function BatchesPage() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
               {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="course">Course Name</Label>
+              <Input id="course" value={form.course_name ?? ""}
+                onChange={(e) => setForm({ ...form, course_name: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Input type="date" value={form.start_date ?? ""}
+                  onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>End Date</Label>
+                <Input type="date" value={form.end_date ?? ""}
+                  onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -269,9 +378,94 @@ function BatchesPage() {
                 )}
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Schedule Type</Label>
+                <Select value={form.schedule_type}
+                  onValueChange={(v) => setForm({ ...form, schedule_type: v as FormValues["schedule_type"] })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="alternate">Alternate Days</SelectItem>
+                    <SelectItem value="custom">Custom Days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={form.status}
+                  onValueChange={(v) => setForm({ ...form, status: v as FormValues["status"] })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {form.schedule_type === "custom" && (
+              <div className="space-y-2">
+                <Label>Days</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {DAYS.map((d) => {
+                    const checked = form.schedule_days.includes(d);
+                    return (
+                      <label key={d} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(c) =>
+                            setForm({
+                              ...form,
+                              schedule_days: c
+                                ? [...form.schedule_days, d]
+                                : form.schedule_days.filter((x) => x !== d),
+                            })
+                          }
+                        />
+                        <span>{d}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {editing && (
+              <div className="space-y-2 border-t pt-4">
+                <Label>Assigned Teachers ({currentTeachers.length})</Label>
+                {currentTeachers.length > 0 && (
+                  <div className="space-y-1">
+                    {currentTeachers.map((t) => (
+                      <div key={t.id} className="flex items-center justify-between text-sm border rounded px-2 py-1">
+                        <div>
+                          <span className="font-medium">{t.teacher_name}</span>
+                          {t.subject && <span className="text-muted-foreground"> · {t.subject}</span>}
+                          {t.email && <span className="text-muted-foreground"> · {t.email}</span>}
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeTeacher(t.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="grid grid-cols-3 gap-2">
+                  <Input placeholder="Teacher name" value={teacherForm.teacher_name}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, teacher_name: e.target.value })} />
+                  <Input placeholder="Subject" value={teacherForm.subject}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, subject: e.target.value })} />
+                  <Input placeholder="Email" type="email" value={teacherForm.email}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })} />
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={addTeacher}>
+                  <Plus className="h-4 w-4 mr-1" /> Add teacher
+                </Button>
+              </div>
+            )}
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Cancel
+                Close
               </Button>
               <Button type="submit" disabled={saving}>
                 {saving ? "Saving..." : editing ? "Save changes" : "Add batch"}
