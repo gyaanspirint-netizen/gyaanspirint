@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  head: () => ({ meta: [{ title: "Admin Dashboard — Institute Manager" }] }),
+  head: () => ({ meta: [{ title: "Institute Dashboard — Institute Manager" }] }),
   component: AdminDashboard,
 });
 
@@ -109,9 +109,9 @@ function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Institute Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Welcome back{adminName ? `, ${adminName}` : user?.email ? `, ${user.email.split("@")[0]}` : ""} — manage your coaching at a glance.
+          Welcome back{adminName ? `, ${adminName}` : user?.email ? `, ${user.email.split("@")[0]}` : ""} — manage your institute at a glance.
         </p>
       </div>
 

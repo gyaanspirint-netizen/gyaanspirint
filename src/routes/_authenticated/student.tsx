@@ -220,10 +220,13 @@ function StudentDashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Student Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Welcome back{student?.name ? `, ${student.name}` : user?.email ? `, ${user.email.split("@")[0]}` : ""} — here's your overview.
+      <div className="rounded-lg border bg-gradient-to-br from-primary/10 via-primary/5 to-background p-6">
+        <p className="text-sm font-medium text-primary uppercase tracking-wide">Welcome back</p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mt-1">
+          {student?.name ?? (user?.email ? user.email.split("@")[0] : "Student")} 👋
+        </h1>
+        <p className="text-muted-foreground mt-2 max-w-xl">
+          Great to see you again! Stay consistent — every class, every assignment, every test brings you closer to your goal. Here's your study overview for today.
         </p>
       </div>
 

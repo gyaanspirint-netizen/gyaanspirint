@@ -182,12 +182,18 @@ function BatchesPage() {
       toast.success("Batch updated");
     } else {
       const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("batches")
-        .insert({ ...payload, owner_id: u.user?.id ?? "", created_by: u.user?.id ?? null });
+        .insert({ ...payload, owner_id: u.user?.id ?? "", created_by: u.user?.id ?? null })
+        .select("*")
+        .single();
       setSaving(false);
       if (error) return toast.error(error.message);
-      toast.success("Batch added");
+      toast.success("Batch added — you can now assign teachers below");
+      // Switch to edit mode so the Teachers section becomes available without closing.
+      setEditing(inserted as Batch);
+      await fetchAll();
+      return;
     }
     setOpen(false);
     fetchAll();
@@ -197,14 +203,16 @@ function BatchesPage() {
     if (!editing) return toast.error("Save the batch first, then add teachers");
     if (!teacherForm.teacher_name.trim()) return toast.error("Teacher name required");
     const { data: u } = await supabase.auth.getUser();
+    if (!u.user?.id) return toast.error("You must be signed in");
     const { error } = await supabase.from("batch_teachers").insert({
       batch_id: editing.id,
       teacher_name: teacherForm.teacher_name.trim(),
       subject: teacherForm.subject.trim(),
       email: teacherForm.email.trim(),
-      owner_id: u.user?.id ?? "",
+      owner_id: u.user.id,
     });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(`Could not assign teacher: ${error.message}`);
+    toast.success("Teacher assigned");
     setTeacherForm({ teacher_name: "", subject: "", email: "" });
     fetchAll();
   };
