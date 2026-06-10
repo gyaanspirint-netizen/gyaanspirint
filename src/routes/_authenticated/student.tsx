@@ -32,6 +32,8 @@ import {
   Clock,
   FileText,
   Percent,
+  Users,
+  BookOpen,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/student")({
@@ -55,6 +57,24 @@ function StudentDashboard() {
   const [tests, setTests] = useState<
     { id: string; test_name: string; subject: string; batch: string; test_date: string }[]
   >([]);
+  const [batches, setBatches] = useState<
+    {
+      id: string;
+      name: string;
+      course_name: string | null;
+      start_date: string | null;
+      end_date: string | null;
+      start_time: string;
+      end_time: string;
+      schedule_type: string;
+      schedule_days: string[];
+      status: string;
+    }[]
+  >([]);
+  const [teachers, setTeachers] = useState<
+    { id: string; batch_id: string; teacher_name: string; subject: string; email: string }[]
+  >([]);
+  const [scheduleCounts, setScheduleCounts] = useState<{ total: number; upcoming: number }>({ total: 0, upcoming: 0 });
   const [fees, setFees] = useState<
     {
       id: string;
@@ -93,6 +113,33 @@ function StudentDashboard() {
       ]);
 
       if (studentRes.data) setStudent(studentRes.data);
+
+      const batchNames = (studentRes.data?.batch ?? "")
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      if (batchNames.length > 0) {
+        const { data: bs } = await supabase
+          .from("batches")
+          .select("id, name, course_name, start_date, end_date, start_time, end_time, schedule_type, schedule_days, status")
+          .in("name", batchNames);
+        const myBatches = (bs ?? []) as typeof batches;
+        setBatches(myBatches);
+        if (myBatches.length > 0) {
+          const ids = myBatches.map((b) => b.id);
+          const [tRes, schRes] = await Promise.all([
+            supabase.from("batch_teachers").select("*").in("batch_id", ids),
+            supabase.from("schedule").select("id, schedule_date").in("batch_id", ids),
+          ]);
+          setTeachers((tRes.data ?? []) as typeof teachers);
+          const all = schRes.data ?? [];
+          setScheduleCounts({
+            total: all.length,
+            upcoming: all.filter((s) => s.schedule_date >= today).length,
+          });
+        }
+      }
+
       if (!feesRes.error) {
         const mapped = (feesRes.data ?? []).map((r) => ({
             ...r,
@@ -186,6 +233,96 @@ function StudentDashboard() {
             Your student profile hasn't been linked yet. Please ask your admin to link your account.
           </CardContent>
         </Card>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Classes</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "—" : scheduleCounts.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Upcoming Classes</CardTitle>
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "—" : scheduleCounts.upcoming}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Assigned Teachers</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "—" : new Set(teachers.map((t) => t.teacher_name)).size}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">My Batches</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "—" : batches.length}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {batches.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {batches.map((b) => {
+            const bTeachers = teachers.filter((t) => t.batch_id === b.id);
+            const scheduleLabel = b.schedule_type === "daily" ? "Daily"
+              : b.schedule_type === "alternate" ? "Alternate Days"
+              : (b.schedule_days?.length ? b.schedule_days.join(", ") : "Custom");
+            return (
+              <Card key={b.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle>{b.name}</CardTitle>
+                      {b.course_name && (
+                        <p className="text-sm text-muted-foreground mt-1">{b.course_name}</p>
+                      )}
+                    </div>
+                    <Badge variant={b.status === "active" ? "default" : "secondary"}>{b.status}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><span className="text-muted-foreground">Code:</span> {b.id.slice(0, 8)}</div>
+                    <div><span className="text-muted-foreground">Timing:</span> {b.start_time.slice(0,5)} – {b.end_time.slice(0,5)}</div>
+                    <div><span className="text-muted-foreground">Start:</span> {b.start_date ? format(new Date(b.start_date), "PP") : "—"}</div>
+                    <div><span className="text-muted-foreground">End:</span> {b.end_date ? format(new Date(b.end_date), "PP") : "—"}</div>
+                  </div>
+                  <div><span className="text-muted-foreground">Schedule:</span> {scheduleLabel}</div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Teachers ({bTeachers.length}):</p>
+                    {bTeachers.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No teachers assigned yet.</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {bTeachers.map((t) => (
+                          <li key={t.id} className="text-xs">
+                            <span className="font-medium">{t.teacher_name}</span>
+                            {t.subject && <span className="text-muted-foreground"> · {t.subject}</span>}
+                            {t.email && <span className="text-muted-foreground"> · {t.email}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

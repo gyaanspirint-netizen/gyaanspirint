@@ -58,35 +58,94 @@ export type Database = {
           },
         ]
       }
+      batch_teachers: {
+        Row: {
+          batch_id: string
+          created_at: string
+          email: string
+          id: string
+          owner_id: string
+          subject: string
+          teacher_name: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          email?: string
+          id?: string
+          owner_id: string
+          subject?: string
+          teacher_name: string
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          owner_id?: string
+          subject?: string
+          teacher_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_teachers_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batches: {
         Row: {
+          course_name: string | null
           created_at: string
           created_by: string | null
+          end_date: string | null
           end_time: string
           id: string
           name: string
           owner_id: string
+          schedule_days: string[]
+          schedule_type: string
+          start_date: string | null
           start_time: string
+          status: string
           updated_at: string
         }
         Insert: {
+          course_name?: string | null
           created_at?: string
           created_by?: string | null
+          end_date?: string | null
           end_time: string
           id?: string
           name: string
           owner_id: string
+          schedule_days?: string[]
+          schedule_type?: string
+          start_date?: string | null
           start_time: string
+          status?: string
           updated_at?: string
         }
         Update: {
+          course_name?: string | null
           created_at?: string
           created_by?: string | null
+          end_date?: string | null
           end_time?: string
           id?: string
           name?: string
           owner_id?: string
+          schedule_days?: string[]
+          schedule_type?: string
+          start_date?: string | null
           start_time?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -298,6 +357,39 @@ export type Database = {
           student_phone?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          message: string
+          owner_id: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          message: string
+          owner_id: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          message?: string
+          owner_id?: string
+          status?: string
+          subject?: string
+          updated_at?: string
         }
         Relationships: []
       }
