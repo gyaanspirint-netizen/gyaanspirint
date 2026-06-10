@@ -11,6 +11,7 @@ import {
   LogOut,
   GraduationCap,
   NotebookPen,
+  LifeBuoy,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +38,7 @@ const adminItems = [
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
   { title: "Tests", url: "/tests", icon: FileText },
   { title: "Fees", url: "/fees", icon: Wallet },
+  { title: "Help Desk", url: "/help-desk", icon: LifeBuoy },
 ] as const;
 
 const studentItems = [
@@ -45,6 +47,7 @@ const studentItems = [
   { title: "Schedule", url: "/schedule", icon: Calendar },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
   { title: "Tests", url: "/tests", icon: FileText },
+  { title: "Help Desk", url: "/help-desk", icon: LifeBuoy },
 ] as const;
 
 export function AppSidebar() {
