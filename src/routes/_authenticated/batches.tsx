@@ -39,7 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Plus, Trash2, Loader2, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +97,7 @@ function BatchesPage() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teacherForm, setTeacherForm] = useState({ teacher_name: "", subject: "", email: "" });
+  const [teacherBatch, setTeacherBatch] = useState<Batch | null>(null);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -199,13 +200,15 @@ function BatchesPage() {
     fetchAll();
   };
 
+  const activeBatch = teacherBatch ?? editing;
+
   const addTeacher = async () => {
-    if (!editing) return toast.error("Save the batch first, then add teachers");
+    if (!activeBatch) return toast.error("Save the batch first, then add teachers");
     if (!teacherForm.teacher_name.trim()) return toast.error("Teacher name required");
     const { data: u } = await supabase.auth.getUser();
     if (!u.user?.id) return toast.error("You must be signed in");
     const { error } = await supabase.from("batch_teachers").insert({
-      batch_id: editing.id,
+      batch_id: activeBatch.id,
       teacher_name: teacherForm.teacher_name.trim(),
       subject: teacherForm.subject.trim(),
       email: teacherForm.email.trim(),
@@ -223,6 +226,11 @@ function BatchesPage() {
     fetchAll();
   };
 
+  const openAssignTeachers = (b: Batch) => {
+    setTeacherBatch(b);
+    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+  };
+
   const onDelete = async () => {
     if (!deleteId) return;
     const { error } = await supabase.from("batches").delete().eq("id", deleteId);
@@ -233,7 +241,7 @@ function BatchesPage() {
   };
 
   const teacherCount = (batchId: string) => teachers.filter((t) => t.batch_id === batchId).length;
-  const currentTeachers = editing ? teachers.filter((t) => t.batch_id === editing.id) : [];
+  const currentTeachers = activeBatch ? teachers.filter((t) => t.batch_id === activeBatch.id) : [];
   const scheduleLabel = (b: Batch) =>
     b.schedule_type === "daily" ? "Daily"
     : b.schedule_type === "alternate" ? "Alternate"
@@ -308,10 +316,13 @@ function BatchesPage() {
                       <TableCell>{counts[b.name] ?? 0}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(b)}>
+                          <Button variant="ghost" size="icon" title="Assign teachers" onClick={() => openAssignTeachers(b)}>
+                            <Users className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Edit batch" onClick={() => openEdit(b)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteId(b.id)}>
+                          <Button variant="ghost" size="icon" title="Delete batch" onClick={() => setDeleteId(b.id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
@@ -482,6 +493,53 @@ function BatchesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!teacherBatch} onOpenChange={(o) => !o && setTeacherBatch(null)}>
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Assign teachers{teacherBatch ? ` — ${teacherBatch.name}` : ""}</DialogTitle>
+            <DialogDescription>
+              Add one or more teachers for this batch. Changes save instantly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label>Assigned Teachers ({currentTeachers.length})</Label>
+            {currentTeachers.length > 0 ? (
+              <div className="space-y-1">
+                {currentTeachers.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between text-sm border rounded px-2 py-1">
+                    <div>
+                      <span className="font-medium">{t.teacher_name}</span>
+                      {t.subject && <span className="text-muted-foreground"> · {t.subject}</span>}
+                      {t.email && <span className="text-muted-foreground"> · {t.email}</span>}
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeTeacher(t.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No teachers assigned yet.</p>
+            )}
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+              <Input placeholder="Teacher name" value={teacherForm.teacher_name}
+                onChange={(e) => setTeacherForm({ ...teacherForm, teacher_name: e.target.value })} />
+              <Input placeholder="Subject" value={teacherForm.subject}
+                onChange={(e) => setTeacherForm({ ...teacherForm, subject: e.target.value })} />
+              <Input placeholder="Email" type="email" value={teacherForm.email}
+                onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })} />
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={addTeacher}>
+              <Plus className="h-4 w-4 mr-1" /> Add teacher
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setTeacherBatch(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
