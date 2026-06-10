@@ -50,6 +50,10 @@ function AuthPage() {
         data: { full_name: fullName, role: "admin" },
       },
     });
+    if (!error) {
+      const { error: rpcErr } = await supabase.rpc("claim_admin_role");
+      if (rpcErr) toast.error(rpcErr.message);
+    }
     setLoading(false);
     if (error) toast.error(error.message);
     else toast.success("Admin account created. You're signed in.");
@@ -59,6 +63,10 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) {
+      // Backfill role/profile for accounts created before the role trigger existed.
+      await supabase.rpc("claim_admin_role");
+    }
     setLoading(false);
     if (error) toast.error(error.message);
   };
