@@ -316,10 +316,13 @@ function BatchesPage() {
                       <TableCell>{counts[b.name] ?? 0}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(b)}>
+                          <Button variant="ghost" size="icon" title="Assign teachers" onClick={() => openAssignTeachers(b)}>
+                            <Users className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Edit batch" onClick={() => openEdit(b)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteId(b.id)}>
+                          <Button variant="ghost" size="icon" title="Delete batch" onClick={() => setDeleteId(b.id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
