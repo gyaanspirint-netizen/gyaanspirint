@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/schedule")({
-  head: () => ({ meta: [{ title: "Schedule — Coaching Hub" }] }),
+  head: () => ({ meta: [{ title: "Schedule — Institute Manager" }] }),
   component: SchedulePage,
 });
 

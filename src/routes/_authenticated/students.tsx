@@ -46,7 +46,7 @@ import { toast } from "sonner";
 import { Pencil, Plus, Search, Trash2, Loader2, Copy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students")({
-  head: () => ({ meta: [{ title: "Students — Coaching Hub" }] }),
+  head: () => ({ meta: [{ title: "Students — Institute Manager" }] }),
   component: StudentsPage,
 });
 
