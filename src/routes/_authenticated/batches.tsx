@@ -241,7 +241,7 @@ function BatchesPage() {
   };
 
   const teacherCount = (batchId: string) => teachers.filter((t) => t.batch_id === batchId).length;
-  const currentTeachers = editing ? teachers.filter((t) => t.batch_id === editing.id) : [];
+  const currentTeachers = activeBatch ? teachers.filter((t) => t.batch_id === activeBatch.id) : [];
   const scheduleLabel = (b: Batch) =>
     b.schedule_type === "daily" ? "Daily"
     : b.schedule_type === "alternate" ? "Alternate"
