@@ -30,7 +30,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
 const adminItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  { title: "Institute Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Students", url: "/students", icon: Users },
   { title: "Batches", url: "/batches", icon: CalendarClock },
   { title: "Homework", url: "/homework", icon: NotebookPen },
