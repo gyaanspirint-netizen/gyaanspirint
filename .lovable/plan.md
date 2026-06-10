@@ -1,66 +1,72 @@
-## Goal
-Convert the coaching app into a multi-tenant SaaS where each admin (coaching owner) sees only their own data, plus the requested feature changes.
+# Coaching Hub Enhancements
 
-## 1. Multi-tenant data isolation
+## 1. Database changes (single migration)
 
-Add `owner_id uuid` (references `auth.users`) to every domain table: `students`, `batches`, `tests`, `fees`, `attendance`, and the new `homework` table. (`profiles` and `user_roles` are already per-user.)
+**`batches` table — new columns:**
+- `course_name` (text)
+- `start_date` (date)
+- `end_date` (date)
+- `start_time` (time)
+- `end_time` (time)
+- `schedule_type` (text: `daily` | `alternate` | `custom`)
+- `schedule_days` (text[] — only used when `schedule_type='custom'`, e.g. `{Mon,Wed,Fri}`)
+- `status` (text: `active` | `completed`, default `active`)
 
-- Backfill `owner_id` on existing rows to the first admin in `user_roles`.
-- Make `owner_id` NOT NULL going forward.
-- Rewrite RLS policies on every domain table:
-  - Admin: can do everything WHERE `owner_id = auth.uid()`.
-  - Student: can SELECT rows scoped to themselves AND that belong to their owning admin (via their `students` row's `owner_id`).
-- New helper SQL function `public.current_admin_id()` that returns the admin who owns the calling student (used by student-side RLS) — implemented as SECURITY DEFINER reading `students.owner_id` where `students.user_id = auth.uid()`.
-- All admin insert flows (students, batches, tests, fees, homework, attendance) auto-set `owner_id = auth.uid()`.
-- The student-creation server function (`students.functions.ts`) stamps `owner_id` from the calling admin.
-- CUID prefix already derives from admin's name; keep that.
+**New table `batch_teachers`** (many-to-many between batches and teacher profiles):
+- `batch_id` → batches
+- `teacher_name` (text), `subject` (text), `email` (text)
+- `owner_id` (auth.users)
+- Standard timestamps, RLS scoped to owner; students can `SELECT` rows for batches they belong to.
 
-## 2. Admin/Student name display
+**New table `support_tickets`:**
+- `subject`, `message`, `status` (`open` | `in_progress` | `resolved`)
+- `created_by` (auth.users), `owner_id` (admin who owns the tenant)
+- Student creates own ticket; admin sees all tickets in their tenant.
 
-- Admin dashboard header: show admin full name from `profiles.full_name`.
-- Student dashboard header: show the student's `name` from their `students` row (the name the admin entered), not the email.
+All new tables get GRANTs + RLS + `current_owner_id()` policies consistent with the existing multi-tenant setup.
 
-## 3. Tests + marks
+## 2. Admin — Batches page (`src/routes/_authenticated/batches.tsx`)
 
-Add `marks` (numeric) and `max_marks` (numeric) columns to `tests`... wait — tests are per-batch. To assign per-student marks we need a child table.
+Extend the existing add/edit dialog:
+- Course name, start/end date, start/end time (validated: end > start), status select.
+- Schedule type dropdown (Daily / Alternate / Custom). When Custom, show 7 day checkboxes.
+- "Teachers" section inside the dialog: list current teachers (name + subject + email) with add/remove buttons. Backed by `batch_teachers`.
+- Batch list shows: name, code, course, timing, schedule pattern, teacher count, status badge.
 
-- New table `test_marks` (`id`, `test_id`, `student_id`, `marks`, `max_marks`, `owner_id`, timestamps).
-- Admin tests page: for each test, "Assign Marks" dialog listing students in that test's batch with marks inputs. Upsert into `test_marks`.
-- Student tests page: shows upcoming tests for their batch AND their own marks for past tests (joined from `test_marks` where `student_id = me`).
+## 3. Student dashboard (`src/routes/_authenticated/student.tsx`)
 
-## 4. Fee due popup on student dashboard
+Add a "My Batches" section that for each batch the student belongs to shows:
+- Batch name, code, course, start/end date, status badge, timings, schedule pattern (Daily / Alternate / `Mon, Wed, Fri`), assigned teachers list (name + subject + email).
+- Stat cards: Total Classes (count of past+future schedule entries for their batches), Upcoming Classes (future schedule entries), Assigned Teachers (distinct count), Attendance % (already computed — keep existing logic).
 
-- On student dashboard mount, query their `fees` row.
-- If `paid_amount < total_fees` (i.e. pending > 0), show a dismissible AlertDialog: "You have pending fees of ₹X, due {date}".
-- Dismissal is session-only (state in component) — re-appears on next dashboard open. No persistence.
+Read-only — no edit controls.
 
-## 5. Homework module (replaces Courses)
+## 4. Help Desk
 
-- Remove "Courses" sidebar entry for both admin and student. Delete `src/routes/_authenticated/courses.tsx`.
-- New table `homework`: `id`, `owner_id`, `student_id` (per-student), `note` (text), `assigned_date`, `done` (boolean default false), timestamps.
-- Admin homework page (`/homework`):
-  - List students, add a homework note for a selected student.
-  - Edit / delete notes.
-  - Toggle "Done" status.
-- Student homework page (`/homework`):
-  - See own homework notes with done/pending badges.
-  - Cannot edit.
+**Sidebar** — new "Help Desk" entry for both admin and student.
 
-## 6. Files to change
+**`/help-desk` route (shared):**
+- Static contact card: "Need Help? Email gyaansprint@gmail.com" with mailto link.
+- Below it, a "Submit a ticket" form (subject + message) → inserts into `support_tickets`.
+- Student sees their own previous tickets with status.
+- Admin sees an "Admin Support Dashboard" panel on the same page (or a separate `/support` admin-only): stats (Total / Open / In Progress / Resolved), search box, status filter, table of all tickets, row actions (change status, delete, view details dialog).
 
-- New migration: add `owner_id` to existing tables, backfill, NOT NULL, replace RLS, create `homework`, `test_marks`, helper function, GRANTs.
-- Edit `src/routes/_authenticated/admin.tsx` — show admin name, scope counts to owner_id (RLS handles it but show admin name explicitly).
-- Edit `src/routes/_authenticated/student.tsx` — show student name, fees popup, homework summary.
-- Edit `src/routes/_authenticated/students.tsx` — set owner_id on insert; server fn updated.
-- Edit `src/routes/_authenticated/batches.tsx`, `fees.tsx`, `tests.tsx`, `attendance.tsx` — set owner_id on insert; tests page gains "Assign Marks" dialog with per-student inputs; student tests view shows own marks.
-- New `src/routes/_authenticated/homework.tsx`.
-- Edit `src/components/app-sidebar.tsx` — remove Courses, add Homework for both roles.
-- Delete `src/routes/_authenticated/courses.tsx`.
-- Edit `src/lib/students.functions.ts` — stamp owner_id from caller.
-- Edit `src/integrations/supabase/types.ts` — regenerated after migration.
+## 5. Out of scope
 
-## 7. Out of scope (confirm)
+- No teacher login/role (teachers are stored as text records on a batch — no auth account).
+- No automatic class-instance generation from schedule pattern; "Total Classes" derives from existing `schedule` rows.
+- No email sending from the ticket form (the contact email is the documented channel; tickets are stored for admin to triage).
 
-- No separate signup approval flow — any admin signup becomes its own tenant immediately.
-- No org/team table — tenant key is the admin's `auth.users.id` directly. (Simplest correct model; if you need multi-admin-per-tenant later we can add an `organizations` table.)
-- No file/PDF uploads in homework (per your instruction — text notes only).
+## Files
+
+**Migration:** new `supabase/migrations/<ts>_batch_meta_teachers_support.sql`
+
+**Edited:**
+- `src/components/app-sidebar.tsx` (Help Desk item)
+- `src/routes/_authenticated/batches.tsx` (new fields + teacher management)
+- `src/routes/_authenticated/student.tsx` (batch info section + cards)
+- `src/routes/_authenticated/schedule.tsx` (optional: surface schedule pattern label)
+- `src/integrations/supabase/types.ts` (regenerated)
+
+**Created:**
+- `src/routes/_authenticated/help-desk.tsx` (shared page; admin sees ticket manager, student sees contact + own tickets)
