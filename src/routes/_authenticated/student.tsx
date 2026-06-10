@@ -198,8 +198,15 @@ function StudentDashboard() {
           ? { label: "Partial", variant: "secondary" as const }
           : { label: "Pending", variant: "destructive" as const };
 
-  const presentDays = attendance.filter((a) => a.status === "present").length;
-  const absentDays = attendance.filter((a) => a.status === "absent").length;
+  // Dedupe by date: a day is "present" if marked present in ANY batch that day.
+  const dayStatusMap = attendance.reduce<Record<string, "present" | "absent">>((acc, a) => {
+    if (acc[a.date] === "present") return acc;
+    acc[a.date] = a.status;
+    return acc;
+  }, {});
+  const dayStatuses = Object.values(dayStatusMap);
+  const presentDays = dayStatuses.filter((s) => s === "present").length;
+  const absentDays = dayStatuses.filter((s) => s === "absent").length;
   const totalDays = presentDays + absentDays;
   const attendancePct = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
