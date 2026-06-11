@@ -13,7 +13,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, X } from "lucide-react";
+
+const fmtTime = (t: string) => {
+  const [hStr, mStr] = t.slice(0, 5).split(":");
+  const h = Number(hStr);
+  const m = Number(mStr);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return `${hh}:${String(m).padStart(2, "0")} ${ampm}`;
+};
+
+const addDays = (iso: string, n: number) => {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+};
 
 export const Route = createFileRoute("/_authenticated/schedule")({
   head: () => ({ meta: [{ title: "Schedule — Institute Manager" }] }),
@@ -40,9 +55,10 @@ function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Entry | null>(null);
-  const [form, setForm] = useState({ batch_id: "ALL", title: "", schedule_date: "", start_time: "", end_time: "", notes: "" });
+  const [form, setForm] = useState({ batch_id: "ALL", title: "", schedule_date: "", extra_dates: [] as string[], start_time: "", end_time: "", notes: "" });
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [repeatCount, setRepeatCount] = useState<string>("");
 
   const load = async () => {
     setLoading(true);
@@ -72,15 +88,17 @@ function SchedulePage() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ batch_id: "ALL", title: "", schedule_date: "", start_time: "", end_time: "", notes: "" });
+    setForm({ batch_id: "ALL", title: "", schedule_date: "", extra_dates: [], start_time: "", end_time: "", notes: "" });
+    setRepeatCount("");
     setOpen(true);
   };
   const openEdit = (e: Entry) => {
     setEditing(e);
     setForm({
-      batch_id: e.batch_id ?? "ALL", title: e.title, schedule_date: e.schedule_date,
+      batch_id: e.batch_id ?? "ALL", title: e.title, schedule_date: e.schedule_date, extra_dates: [],
       start_time: e.start_time.slice(0,5), end_time: e.end_time.slice(0,5), notes: e.notes ?? "",
     });
+    setRepeatCount("");
     setOpen(true);
   };
 
@@ -89,21 +107,27 @@ function SchedulePage() {
       return toast.error("Fill all required fields");
     }
     setSaving(true);
-    const payload = {
+    const base = {
       title: form.title.trim(),
       batch_id: form.batch_id === "ALL" ? null : form.batch_id,
-      schedule_date: form.schedule_date,
       start_time: form.start_time,
       end_time: form.end_time,
       notes: form.notes.trim() || null,
       owner_id: user?.id ?? "",
     };
-    const { error } = editing
-      ? await supabase.from("schedule").update(payload).eq("id", editing.id)
-      : await supabase.from("schedule").insert(payload);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success(editing ? "Schedule updated" : "Schedule added");
+    if (editing) {
+      const { error } = await supabase.from("schedule").update({ ...base, schedule_date: form.schedule_date }).eq("id", editing.id);
+      setSaving(false);
+      if (error) return toast.error(error.message);
+      toast.success("Schedule updated");
+    } else {
+      const allDates = Array.from(new Set([form.schedule_date, ...form.extra_dates])).filter(Boolean);
+      const rows = allDates.map((d) => ({ ...base, schedule_date: d }));
+      const { error } = await supabase.from("schedule").insert(rows);
+      setSaving(false);
+      if (error) return toast.error(error.message);
+      toast.success(rows.length > 1 ? `Added ${rows.length} schedule entries` : "Schedule added");
+    }
     setOpen(false);
     load();
   };
@@ -153,7 +177,7 @@ function SchedulePage() {
                   {visibleEntries.map((e) => (
                     <TableRow key={e.id}>
                       <TableCell>{format(new Date(e.schedule_date), "PP")}</TableCell>
-                      <TableCell>{e.start_time.slice(0,5)} – {e.end_time.slice(0,5)}</TableCell>
+                      <TableCell>{fmtTime(e.start_time)} – {fmtTime(e.end_time)}</TableCell>
                       <TableCell><Badge variant="secondary">{batchName(e.batch_id)}</Badge></TableCell>
                       <TableCell className="font-medium">{e.title}</TableCell>
                       <TableCell className="text-muted-foreground">{e.notes ?? "—"}</TableCell>
@@ -198,12 +222,65 @@ function SchedulePage() {
               <div>
                 <Label>Start</Label>
                 <Input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+                {form.start_time && <p className="text-[10px] text-muted-foreground mt-1">{fmtTime(form.start_time)}</p>}
               </div>
               <div>
                 <Label>End</Label>
                 <Input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+                {form.end_time && <p className="text-[10px] text-muted-foreground mt-1">{fmtTime(form.end_time)}</p>}
               </div>
             </div>
+            {!editing && (
+              <div className="rounded-md border p-3 space-y-2 bg-muted/30">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <Label className="text-xs font-medium">Repeat on more days (optional)</Label>
+                  <div className="flex items-center gap-1">
+                    <Button type="button" size="sm" variant="outline"
+                      onClick={() => {
+                        if (!form.schedule_date) return toast.error("Pick the main date first");
+                        const next = addDays(form.schedule_date, form.extra_dates.length + 1);
+                        if (form.extra_dates.includes(next) || next === form.schedule_date) return;
+                        setForm({ ...form, extra_dates: [...form.extra_dates, next] });
+                      }}>+ Next day</Button>
+                    <Button type="button" size="sm" variant="outline"
+                      onClick={() => {
+                        if (!form.schedule_date) return toast.error("Pick the main date first");
+                        const n = Math.max(1, Math.min(30, Number(repeatCount) || 7));
+                        const dates: string[] = [];
+                        for (let i = 1; i <= n; i++) {
+                          const d = addDays(form.schedule_date, i);
+                          if (d !== form.schedule_date) dates.push(d);
+                        }
+                        setForm({ ...form, extra_dates: Array.from(new Set([...form.extra_dates, ...dates])) });
+                      }}>Repeat daily</Button>
+                    <Input type="number" min={1} max={30} placeholder="7"
+                      value={repeatCount} onChange={(e) => setRepeatCount(e.target.value)}
+                      className="w-16 h-8" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input type="date" className="w-40 h-8"
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (!v || v === form.schedule_date || form.extra_dates.includes(v)) return;
+                      setForm({ ...form, extra_dates: [...form.extra_dates, v] });
+                      e.target.value = "";
+                    }} />
+                  {form.extra_dates.length === 0 ? (
+                    <span className="text-xs text-muted-foreground">No extra days. Use the buttons or pick a date to add.</span>
+                  ) : (
+                    form.extra_dates.map((d) => (
+                      <Badge key={d} variant="secondary" className="gap-1">
+                        {format(new Date(d + "T00:00:00"), "PP")}
+                        <button type="button" onClick={() => setForm({ ...form, extra_dates: form.extra_dates.filter((x) => x !== d) })}>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
             <div>
               <Label>Notes (optional)</Label>
               <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />

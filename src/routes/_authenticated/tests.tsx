@@ -43,6 +43,7 @@ import {
 import { Pencil, Plus, Trash2, CalendarDays } from "lucide-react";
 import { ClipboardList } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 export const Route = createFileRoute("/_authenticated/tests")({
@@ -232,12 +233,22 @@ function TestsPage() {
       toast.success("Test updated");
     } else {
       const { data: userData } = await supabase.auth.getUser();
-      const { error } = await supabase
-        .from("tests")
-        .insert({ ...parsed.data, created_by: userData.user?.id ?? null, owner_id: userData.user?.id ?? "" });
+      const batchList = parsed.data.batch
+        .split(",")
+        .map((b) => b.trim())
+        .filter(Boolean);
+      const rowsToInsert = batchList.map((b) => ({
+        test_name: parsed.data.test_name,
+        subject: parsed.data.subject,
+        test_date: parsed.data.test_date,
+        batch: b,
+        created_by: userData.user?.id ?? null,
+        owner_id: userData.user?.id ?? "",
+      }));
+      const { error } = await supabase.from("tests").insert(rowsToInsert);
       setSaving(false);
       if (error) return toast.error(error.message);
-      toast.success("Test added");
+      toast.success(batchList.length > 1 ? `Test added to ${batchList.length} batches` : "Test added");
     }
     setDialogOpen(false);
     fetchTests();
@@ -403,18 +414,41 @@ function TestsPage() {
               )}
             </div>
             <div>
-              <Label htmlFor="batch">Batch</Label>
+              <Label htmlFor="batch">Batch{!editing && batchOptions.length > 0 ? "es (select one or more)" : ""}</Label>
               {batchOptions.length > 0 ? (
-                <Select value={form.batch} onValueChange={(v) => setForm({ ...form, batch: v })}>
-                  <SelectTrigger id="batch">
-                    <SelectValue placeholder="Select batch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {batchOptions.map((b) => (
-                      <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                editing ? (
+                  <Select value={form.batch} onValueChange={(v) => setForm({ ...form, batch: v })}>
+                    <SelectTrigger id="batch">
+                      <SelectValue placeholder="Select batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {batchOptions.map((b) => (
+                        <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="rounded-md border p-3 space-y-2 max-h-44 overflow-y-auto">
+                    {batchOptions.map((b) => {
+                      const selected = form.batch.split(",").map((x) => x.trim()).filter(Boolean);
+                      const isOn = selected.includes(b.name);
+                      return (
+                        <label key={b.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={isOn}
+                            onCheckedChange={(c) => {
+                              const next = c
+                                ? Array.from(new Set([...selected, b.name]))
+                                : selected.filter((x) => x !== b.name);
+                              setForm({ ...form, batch: next.join(", ") });
+                            }}
+                          />
+                          <span>{b.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )
               ) : (
                 <Input
                   id="batch"

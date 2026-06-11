@@ -107,11 +107,17 @@ function BatchesPage() {
       .order("start_time");
     if (error) toast.error(error.message);
     setRows((data ?? []) as Batch[]);
-    // Count students per batch
+    // Count students per batch (student.batch can be a comma-separated list of batch names)
     const { data: students } = await supabase.from("students").select("batch");
     const map: Record<string, number> = {};
     (students ?? []).forEach((s) => {
-      map[s.batch] = (map[s.batch] ?? 0) + 1;
+      (s.batch ?? "")
+        .split(",")
+        .map((b: string) => b.trim())
+        .filter(Boolean)
+        .forEach((name: string) => {
+          map[name] = (map[name] ?? 0) + 1;
+        });
     });
     setCounts(map);
     const { data: ts } = await supabase.from("batch_teachers").select("*");
