@@ -188,6 +188,30 @@ function AdminAttendance() {
   const studentName = (id: string) =>
     students.find((s) => s.id === id)?.name ?? "Unknown";
 
+  const buildWaUrl = (phoneRaw: string, name: string, d: string) => {
+    const phone = phoneRaw.replace(/\D/g, "");
+    const normalized = phone.length === 10 ? `91${phone}` : phone;
+    const dateLabel = format(new Date(d), "PPP");
+    const msg = `Dear Parent, this is to inform you that ${name} was marked ABSENT on ${dateLabel}. Please ensure regular attendance. — Institute`;
+    return `https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`;
+  };
+
+  const notifyParent = (s: Student) => {
+    if (!s.parent_phone) { toast.error("No parent phone on record"); return; }
+    window.open(buildWaUrl(s.parent_phone, s.name, date), "_blank", "noopener,noreferrer");
+  };
+
+  const notifyAllAbsent = () => {
+    const absentees = studentsInBatch.filter((s) => todayMap[s.id] === "absent" && s.parent_phone);
+    if (absentees.length === 0) { toast.error("No absent students with a parent phone"); return; }
+    absentees.forEach((s, i) => {
+      setTimeout(() => {
+        window.open(buildWaUrl(s.parent_phone!, s.name, date), "_blank", "noopener,noreferrer");
+      }, i * 300);
+    });
+    toast.success(`Opening WhatsApp for ${absentees.length} parent${absentees.length === 1 ? "" : "s"}`);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -229,6 +253,9 @@ function AdminAttendance() {
                     </SelectContent>
                   </Select>
                 </div>
+                <Button variant="outline" onClick={notifyAllAbsent} className="shrink-0">
+                  <MessageCircle className="h-4 w-4 mr-2" /> Notify All Absent
+                </Button>
               </div>
 
               {loading ? (
@@ -295,6 +322,17 @@ function AdminAttendance() {
                               >
                                 <X className="h-4 w-4 mr-1" /> Absent
                               </Button>
+                              {current === "absent" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => notifyParent(s)}
+                                  title={s.parent_phone ? "Send WhatsApp to parent" : "No parent phone on record"}
+                                  disabled={!s.parent_phone}
+                                >
+                                  <MessageCircle className="h-4 w-4 mr-1" /> Notify
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
