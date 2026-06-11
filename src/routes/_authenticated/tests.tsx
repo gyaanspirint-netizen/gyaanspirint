@@ -43,6 +43,7 @@ import {
 import { Pencil, Plus, Trash2, CalendarDays } from "lucide-react";
 import { ClipboardList } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 export const Route = createFileRoute("/_authenticated/tests")({
