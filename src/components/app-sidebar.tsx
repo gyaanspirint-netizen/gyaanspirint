@@ -43,6 +43,7 @@ const adminItems = [
 
 const studentItems = [
   { title: "Dashboard", url: "/student", icon: LayoutDashboard },
+  { title: "My Batches", url: "/my-batches", icon: CalendarClock },
   { title: "Homework", url: "/homework", icon: NotebookPen },
   { title: "Schedule", url: "/schedule", icon: Calendar },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },

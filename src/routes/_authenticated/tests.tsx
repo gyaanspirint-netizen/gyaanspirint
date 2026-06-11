@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/table";
 import { Pencil, Plus, Trash2, CalendarDays } from "lucide-react";
 import { ClipboardList } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 export const Route = createFileRoute("/_authenticated/tests")({
   component: TestsPage,
@@ -79,6 +81,7 @@ function TestsPage() {
   const isAdmin = role === "admin";
 
   const [tests, setTests] = useState<Test[]>([]);
+  const [batchOptions, setBatchOptions] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Test | null>(null);
@@ -113,6 +116,10 @@ function TestsPage() {
 
   useEffect(() => {
     fetchTests();
+    (async () => {
+      const { data } = await supabase.from("batches").select("id, name").order("name");
+      setBatchOptions((data ?? []) as { id: string; name: string }[]);
+    })();
   }, []);
 
   // Load student's own marks
@@ -397,11 +404,25 @@ function TestsPage() {
             </div>
             <div>
               <Label htmlFor="batch">Batch</Label>
-              <Input
-                id="batch"
-                value={form.batch}
-                onChange={(e) => setForm({ ...form, batch: e.target.value })}
-              />
+              {batchOptions.length > 0 ? (
+                <Select value={form.batch} onValueChange={(v) => setForm({ ...form, batch: v })}>
+                  <SelectTrigger id="batch">
+                    <SelectValue placeholder="Select batch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {batchOptions.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="batch"
+                  placeholder="No batches yet — create one first"
+                  value={form.batch}
+                  onChange={(e) => setForm({ ...form, batch: e.target.value })}
+                />
+              )}
               {errors.batch && (
                 <p className="text-sm text-destructive mt-1">{errors.batch}</p>
               )}
