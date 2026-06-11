@@ -414,18 +414,41 @@ function TestsPage() {
               )}
             </div>
             <div>
-              <Label htmlFor="batch">Batch</Label>
+              <Label htmlFor="batch">Batch{!editing && batchOptions.length > 0 ? "es (select one or more)" : ""}</Label>
               {batchOptions.length > 0 ? (
-                <Select value={form.batch} onValueChange={(v) => setForm({ ...form, batch: v })}>
-                  <SelectTrigger id="batch">
-                    <SelectValue placeholder="Select batch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {batchOptions.map((b) => (
-                      <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                editing ? (
+                  <Select value={form.batch} onValueChange={(v) => setForm({ ...form, batch: v })}>
+                    <SelectTrigger id="batch">
+                      <SelectValue placeholder="Select batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {batchOptions.map((b) => (
+                        <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="rounded-md border p-3 space-y-2 max-h-44 overflow-y-auto">
+                    {batchOptions.map((b) => {
+                      const selected = form.batch.split(",").map((x) => x.trim()).filter(Boolean);
+                      const isOn = selected.includes(b.name);
+                      return (
+                        <label key={b.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={isOn}
+                            onCheckedChange={(c) => {
+                              const next = c
+                                ? Array.from(new Set([...selected, b.name]))
+                                : selected.filter((x) => x !== b.name);
+                              setForm({ ...form, batch: next.join(", ") });
+                            }}
+                          />
+                          <span>{b.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )
               ) : (
                 <Input
                   id="batch"
