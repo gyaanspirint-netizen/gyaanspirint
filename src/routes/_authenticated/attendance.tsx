@@ -193,7 +193,13 @@ function AdminAttendance() {
     const normalized = phone.length === 10 ? `91${phone}` : phone;
     const dateLabel = format(new Date(d), "PPP");
     const msg = `Dear Parent, this is to inform you that ${name} was marked ABSENT on ${dateLabel}. Please ensure regular attendance. — Institute`;
-    return `https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`;
+    const text = encodeURIComponent(msg);
+    // Use web.whatsapp.com on desktop, wa.me on mobile — avoids the api.whatsapp.com
+    // redirect that some networks / iframes block (ERR_BLOCKED_BY_RESPONSE).
+    const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    return isMobile
+      ? `https://wa.me/${normalized}?text=${text}`
+      : `https://web.whatsapp.com/send?phone=${normalized}&text=${text}`;
   };
 
   const notifyParent = (s: Student) => {
