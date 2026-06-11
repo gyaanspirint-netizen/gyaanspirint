@@ -177,7 +177,7 @@ function SchedulePage() {
                   {visibleEntries.map((e) => (
                     <TableRow key={e.id}>
                       <TableCell>{format(new Date(e.schedule_date), "PP")}</TableCell>
-                      <TableCell>{e.start_time.slice(0,5)} – {e.end_time.slice(0,5)}</TableCell>
+                      <TableCell>{fmtTime(e.start_time)} – {fmtTime(e.end_time)}</TableCell>
                       <TableCell><Badge variant="secondary">{batchName(e.batch_id)}</Badge></TableCell>
                       <TableCell className="font-medium">{e.title}</TableCell>
                       <TableCell className="text-muted-foreground">{e.notes ?? "—"}</TableCell>
