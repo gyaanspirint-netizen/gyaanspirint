@@ -19,6 +19,7 @@ import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticated/student'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedScheduleRouteImport } from './routes/_authenticated/schedule'
+import { Route as AuthenticatedMyBatchesRouteImport } from './routes/_authenticated/my-batches'
 import { Route as AuthenticatedHomeworkRouteImport } from './routes/_authenticated/homework'
 import { Route as AuthenticatedHelpDeskRouteImport } from './routes/_authenticated/help-desk'
 import { Route as AuthenticatedFeesRouteImport } from './routes/_authenticated/fees'
@@ -76,6 +77,11 @@ const AuthenticatedScheduleRoute = AuthenticatedScheduleRouteImport.update({
   path: '/schedule',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMyBatchesRoute = AuthenticatedMyBatchesRouteImport.update({
+  id: '/my-batches',
+  path: '/my-batches',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHomeworkRoute = AuthenticatedHomeworkRouteImport.update({
   id: '/homework',
   path: '/homework',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/fees': typeof AuthenticatedFeesRoute
   '/help-desk': typeof AuthenticatedHelpDeskRoute
   '/homework': typeof AuthenticatedHomeworkRoute
+  '/my-batches': typeof AuthenticatedMyBatchesRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/student': typeof AuthenticatedStudentRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/fees': typeof AuthenticatedFeesRoute
   '/help-desk': typeof AuthenticatedHelpDeskRoute
   '/homework': typeof AuthenticatedHomeworkRoute
+  '/my-batches': typeof AuthenticatedMyBatchesRoute
   '/schedule': typeof AuthenticatedScheduleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/student': typeof AuthenticatedStudentRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/_authenticated/fees': typeof AuthenticatedFeesRoute
   '/_authenticated/help-desk': typeof AuthenticatedHelpDeskRoute
   '/_authenticated/homework': typeof AuthenticatedHomeworkRoute
+  '/_authenticated/my-batches': typeof AuthenticatedMyBatchesRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/student': typeof AuthenticatedStudentRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/fees'
     | '/help-desk'
     | '/homework'
+    | '/my-batches'
     | '/schedule'
     | '/settings'
     | '/student'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/fees'
     | '/help-desk'
     | '/homework'
+    | '/my-batches'
     | '/schedule'
     | '/settings'
     | '/student'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/_authenticated/fees'
     | '/_authenticated/help-desk'
     | '/_authenticated/homework'
+    | '/_authenticated/my-batches'
     | '/_authenticated/schedule'
     | '/_authenticated/settings'
     | '/_authenticated/student'
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScheduleRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/my-batches': {
+      id: '/_authenticated/my-batches'
+      path: '/my-batches'
+      fullPath: '/my-batches'
+      preLoaderRoute: typeof AuthenticatedMyBatchesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/homework': {
       id: '/_authenticated/homework'
       path: '/homework'
@@ -366,6 +385,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFeesRoute: typeof AuthenticatedFeesRoute
   AuthenticatedHelpDeskRoute: typeof AuthenticatedHelpDeskRoute
   AuthenticatedHomeworkRoute: typeof AuthenticatedHomeworkRoute
+  AuthenticatedMyBatchesRoute: typeof AuthenticatedMyBatchesRoute
   AuthenticatedScheduleRoute: typeof AuthenticatedScheduleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStudentRoute: typeof AuthenticatedStudentRoute
@@ -381,6 +401,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFeesRoute: AuthenticatedFeesRoute,
   AuthenticatedHelpDeskRoute: AuthenticatedHelpDeskRoute,
   AuthenticatedHomeworkRoute: AuthenticatedHomeworkRoute,
+  AuthenticatedMyBatchesRoute: AuthenticatedMyBatchesRoute,
   AuthenticatedScheduleRoute: AuthenticatedScheduleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStudentRoute: AuthenticatedStudentRoute,
