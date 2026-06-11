@@ -88,15 +88,17 @@ function SchedulePage() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ batch_id: "ALL", title: "", schedule_date: "", start_time: "", end_time: "", notes: "" });
+    setForm({ batch_id: "ALL", title: "", schedule_date: "", extra_dates: [], start_time: "", end_time: "", notes: "" });
+    setRepeatCount("");
     setOpen(true);
   };
   const openEdit = (e: Entry) => {
     setEditing(e);
     setForm({
-      batch_id: e.batch_id ?? "ALL", title: e.title, schedule_date: e.schedule_date,
+      batch_id: e.batch_id ?? "ALL", title: e.title, schedule_date: e.schedule_date, extra_dates: [],
       start_time: e.start_time.slice(0,5), end_time: e.end_time.slice(0,5), notes: e.notes ?? "",
     });
+    setRepeatCount("");
     setOpen(true);
   };
 
@@ -105,21 +107,27 @@ function SchedulePage() {
       return toast.error("Fill all required fields");
     }
     setSaving(true);
-    const payload = {
+    const base = {
       title: form.title.trim(),
       batch_id: form.batch_id === "ALL" ? null : form.batch_id,
-      schedule_date: form.schedule_date,
       start_time: form.start_time,
       end_time: form.end_time,
       notes: form.notes.trim() || null,
       owner_id: user?.id ?? "",
     };
-    const { error } = editing
-      ? await supabase.from("schedule").update(payload).eq("id", editing.id)
-      : await supabase.from("schedule").insert(payload);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success(editing ? "Schedule updated" : "Schedule added");
+    if (editing) {
+      const { error } = await supabase.from("schedule").update({ ...base, schedule_date: form.schedule_date }).eq("id", editing.id);
+      setSaving(false);
+      if (error) return toast.error(error.message);
+      toast.success("Schedule updated");
+    } else {
+      const allDates = Array.from(new Set([form.schedule_date, ...form.extra_dates])).filter(Boolean);
+      const rows = allDates.map((d) => ({ ...base, schedule_date: d }));
+      const { error } = await supabase.from("schedule").insert(rows);
+      setSaving(false);
+      if (error) return toast.error(error.message);
+      toast.success(rows.length > 1 ? `Added ${rows.length} schedule entries` : "Schedule added");
+    }
     setOpen(false);
     load();
   };
