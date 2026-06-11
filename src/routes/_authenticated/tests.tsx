@@ -233,12 +233,22 @@ function TestsPage() {
       toast.success("Test updated");
     } else {
       const { data: userData } = await supabase.auth.getUser();
-      const { error } = await supabase
-        .from("tests")
-        .insert({ ...parsed.data, created_by: userData.user?.id ?? null, owner_id: userData.user?.id ?? "" });
+      const batchList = parsed.data.batch
+        .split(",")
+        .map((b) => b.trim())
+        .filter(Boolean);
+      const rowsToInsert = batchList.map((b) => ({
+        test_name: parsed.data.test_name,
+        subject: parsed.data.subject,
+        test_date: parsed.data.test_date,
+        batch: b,
+        created_by: userData.user?.id ?? null,
+        owner_id: userData.user?.id ?? "",
+      }));
+      const { error } = await supabase.from("tests").insert(rowsToInsert);
       setSaving(false);
       if (error) return toast.error(error.message);
-      toast.success("Test added");
+      toast.success(batchList.length > 1 ? `Test added to ${batchList.length} batches` : "Test added");
     }
     setDialogOpen(false);
     fetchTests();
