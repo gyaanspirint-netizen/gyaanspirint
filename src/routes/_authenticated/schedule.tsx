@@ -222,12 +222,65 @@ function SchedulePage() {
               <div>
                 <Label>Start</Label>
                 <Input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+                {form.start_time && <p className="text-[10px] text-muted-foreground mt-1">{fmtTime(form.start_time)}</p>}
               </div>
               <div>
                 <Label>End</Label>
                 <Input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+                {form.end_time && <p className="text-[10px] text-muted-foreground mt-1">{fmtTime(form.end_time)}</p>}
               </div>
             </div>
+            {!editing && (
+              <div className="rounded-md border p-3 space-y-2 bg-muted/30">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <Label className="text-xs font-medium">Repeat on more days (optional)</Label>
+                  <div className="flex items-center gap-1">
+                    <Button type="button" size="sm" variant="outline"
+                      onClick={() => {
+                        if (!form.schedule_date) return toast.error("Pick the main date first");
+                        const next = addDays(form.schedule_date, form.extra_dates.length + 1);
+                        if (form.extra_dates.includes(next) || next === form.schedule_date) return;
+                        setForm({ ...form, extra_dates: [...form.extra_dates, next] });
+                      }}>+ Next day</Button>
+                    <Button type="button" size="sm" variant="outline"
+                      onClick={() => {
+                        if (!form.schedule_date) return toast.error("Pick the main date first");
+                        const n = Math.max(1, Math.min(30, Number(repeatCount) || 7));
+                        const dates: string[] = [];
+                        for (let i = 1; i <= n; i++) {
+                          const d = addDays(form.schedule_date, i);
+                          if (d !== form.schedule_date) dates.push(d);
+                        }
+                        setForm({ ...form, extra_dates: Array.from(new Set([...form.extra_dates, ...dates])) });
+                      }}>Repeat daily</Button>
+                    <Input type="number" min={1} max={30} placeholder="7"
+                      value={repeatCount} onChange={(e) => setRepeatCount(e.target.value)}
+                      className="w-16 h-8" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input type="date" className="w-40 h-8"
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (!v || v === form.schedule_date || form.extra_dates.includes(v)) return;
+                      setForm({ ...form, extra_dates: [...form.extra_dates, v] });
+                      e.target.value = "";
+                    }} />
+                  {form.extra_dates.length === 0 ? (
+                    <span className="text-xs text-muted-foreground">No extra days. Use the buttons or pick a date to add.</span>
+                  ) : (
+                    form.extra_dates.map((d) => (
+                      <Badge key={d} variant="secondary" className="gap-1">
+                        {format(new Date(d + "T00:00:00"), "PP")}
+                        <button type="button" onClick={() => setForm({ ...form, extra_dates: form.extra_dates.filter((x) => x !== d) })}>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
             <div>
               <Label>Notes (optional)</Label>
               <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
