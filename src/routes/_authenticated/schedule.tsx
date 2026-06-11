@@ -55,9 +55,10 @@ function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Entry | null>(null);
-  const [form, setForm] = useState({ batch_id: "ALL", title: "", schedule_date: "", start_time: "", end_time: "", notes: "" });
+  const [form, setForm] = useState({ batch_id: "ALL", title: "", schedule_date: "", extra_dates: [] as string[], start_time: "", end_time: "", notes: "" });
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [repeatCount, setRepeatCount] = useState<string>("");
 
   const load = async () => {
     setLoading(true);
