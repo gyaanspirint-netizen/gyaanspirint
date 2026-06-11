@@ -28,7 +28,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, X, Loader2, MessageCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/attendance")({
@@ -39,6 +39,7 @@ type Student = {
   id: string;
   name: string;
   batch: string;
+  parent_phone?: string;
 };
 
 type AttendanceRow = {
@@ -83,7 +84,7 @@ function AdminAttendance() {
   const loadStudents = async () => {
     const { data, error } = await supabase
       .from("students")
-      .select("id, name, batch")
+      .select("id, name, batch, parent_phone")
       .order("name");
     if (error) {
       toast.error(error.message);
