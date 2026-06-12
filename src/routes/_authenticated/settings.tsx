@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Loader2, Save, User } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Settings — Institute Manager" }] }),
+  head: () => ({ meta: [{ title: "Settings — Gyanspirint" }] }),
   component: SettingsPage,
 });
 

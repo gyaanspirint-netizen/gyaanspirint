@@ -11,7 +11,7 @@ import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
-    meta: [{ title: "Forgot Password — Institute Manager" }],
+    meta: [{ title: "Forgot Password — Gyanspirint" }],
   }),
   component: ForgotPasswordPage,
 });
@@ -41,7 +41,7 @@ function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-6 text-primary">
           <GraduationCap className="h-7 w-7" />
-          <span className="text-lg font-semibold">Institute Manager</span>
+          <span className="text-lg font-semibold">Gyanspirint</span>
         </div>
         <Card>
           <CardHeader>

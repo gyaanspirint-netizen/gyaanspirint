@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { Loader2, Mail, Trash2, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/help-desk")({
-  head: () => ({ meta: [{ title: "Help Desk — Institute Manager" }] }),
+  head: () => ({ meta: [{ title: "Help Desk — Gyanspirint" }] }),
   component: HelpDeskPage,
 });
 

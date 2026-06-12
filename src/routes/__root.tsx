@@ -78,14 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Institute Manager — Coaching & Tuition Management" },
+      { title: "Gyanspirint — Coaching & Tuition Management" },
       { name: "description", content: "All-in-one coaching institute management: students, batches, attendance, fees, tests, and schedules." },
-      { name: "author", content: "Institute Manager" },
-      { property: "og:title", content: "Institute Manager" },
+      { name: "author", content: "Gyanspirint" },
+      { property: "og:title", content: "Gyanspirint" },
       { property: "og:description", content: "All-in-one coaching institute management: students, batches, attendance, fees, tests, and schedules." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@institutemanager" },
+      { name: "twitter:site", content: "@gyanspirint" },
     ],
     links: [
       {

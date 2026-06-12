@@ -5,7 +5,7 @@ import { GraduationCap, Users, Calendar, Wallet, ClipboardCheck, ArrowRight } fr
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Institute Manager" },
+      { title: "Gyanspirint" },
       { name: "description", content: "All-in-one coaching institute management: students, batches, attendance, fees, tests, and schedules." },
     ],
   }),
@@ -27,7 +27,7 @@ function Landing() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2 text-primary">
             <GraduationCap className="h-6 w-6" />
-            <span className="text-lg font-semibold">Institute Manager</span>
+            <span className="text-lg font-semibold">Gyanspirint</span>
           </div>
           <Link
             to="/auth"
@@ -81,7 +81,7 @@ function Landing() {
       </main>
 
       <footer className="border-t px-6 py-6 text-center text-xs text-muted-foreground">
-        Institute Manager — built for coaching institutes and tuition centers.
+        Gyanspirint — built for coaching institutes and tuition centers.
       </footer>
     </div>
   );

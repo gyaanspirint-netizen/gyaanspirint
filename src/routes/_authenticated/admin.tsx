@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  head: () => ({ meta: [{ title: "Institute Dashboard — Institute Manager" }] }),
+  head: () => ({ meta: [{ title: "Institute Dashboard — Gyanspirint" }] }),
   component: AdminDashboard,
 });
 
