@@ -31,7 +31,7 @@ const addDays = (iso: string, n: number) => {
 };
 
 export const Route = createFileRoute("/_authenticated/schedule")({
-  head: () => ({ meta: [{ title: "Schedule — Institute Manager" }] }),
+  head: () => ({ meta: [{ title: "Schedule — Gyanspirint" }] }),
   component: SchedulePage,
 });
 

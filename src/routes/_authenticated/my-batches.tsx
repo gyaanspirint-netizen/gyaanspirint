@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CalendarDays, Clock, Users, BookOpen, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/my-batches")({
-  head: () => ({ meta: [{ title: "My Batches — Institute Manager" }] }),
+  head: () => ({ meta: [{ title: "My Batches — Gyanspirint" }] }),
   component: MyBatchesPage,
 });
 

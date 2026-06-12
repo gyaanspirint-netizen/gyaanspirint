@@ -11,7 +11,7 @@ import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
-    meta: [{ title: "Set New Password — Institute Manager" }],
+    meta: [{ title: "Set New Password — Gyanspirint" }],
   }),
   component: ResetPasswordPage,
 });
@@ -63,7 +63,7 @@ function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-6 text-primary">
           <GraduationCap className="h-7 w-7" />
-          <span className="text-lg font-semibold">Institute Manager</span>
+          <span className="text-lg font-semibold">Gyanspirint</span>
         </div>
         <Card>
           <CardHeader>
