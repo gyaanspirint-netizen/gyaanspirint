@@ -19,9 +19,9 @@ function AuthedLayout() {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center border-b px-4 gap-3">
+          <header className="h-14 flex items-center border-b border-border/60 bg-card/40 backdrop-blur px-4 gap-3 sticky top-0 z-20">
             <SidebarTrigger />
-            <h1 className="text-sm font-medium text-muted-foreground">Gyanspirint</h1>
+            <h1 className="text-sm font-semibold tracking-tight">Gyanspirint</h1>
           </header>
           <main className="flex-1 p-6">
             <Outlet />
