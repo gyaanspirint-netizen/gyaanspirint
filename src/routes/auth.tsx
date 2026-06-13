@@ -4,13 +4,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { studentLoginLookup } from "@/lib/students.functions";
+import { registerInstitute } from "@/lib/institutes.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -22,12 +23,20 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const lookupFn = useServerFn(studentLoginLookup);
+  const registerFn = useServerFn(registerInstitute);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [cuid, setCuid] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
+
+  // Institute registration fields
+  const [instName, setInstName] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [instEmail, setInstEmail] = useState("");
+  const [city, setCity] = useState("");
+  const [registered, setRegistered] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -39,34 +48,36 @@ function AuthPage() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: fullName, role: "admin" },
-      },
-    });
-    if (!error) {
-      const { error: rpcErr } = await supabase.rpc("claim_admin_role");
-      if (rpcErr) toast.error(rpcErr.message);
+    try {
+      await registerFn({
+        data: {
+          name: instName,
+          ownerName,
+          mobile,
+          email: instEmail,
+          city,
+        },
+      });
+      setRegistered(true);
+      setInstName("");
+      setOwnerName("");
+      setMobile("");
+      setInstEmail("");
+      setCity("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    if (error) toast.error(error.message);
-    else toast.success("Admin account created. You're signed in.");
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) {
-      // Backfill role/profile for accounts created before the role trigger existed.
-      await supabase.rpc("claim_admin_role");
-    }
     setLoading(false);
     if (error) toast.error(error.message);
   };
@@ -96,7 +107,7 @@ function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2.5 mb-6">
           <div
@@ -111,50 +122,38 @@ function AuthPage() {
           <CardHeader>
             <CardTitle>Welcome</CardTitle>
             <CardDescription>
-              Students sign in with CUID and phone. Admins use email and password.
+              Students sign in with CUID and phone. Institutes register and sign in with email.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="student">
+            <Tabs defaultValue="signin">
               <TabsList className="grid grid-cols-3 w-full">
                 <TabsTrigger value="student">Student</TabsTrigger>
-                <TabsTrigger value="signin">Admin</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="register">Register Institute</TabsTrigger>
               </TabsList>
+
               <TabsContent value="student">
                 <form onSubmit={handleStudentSignIn} className="space-y-4 mt-4">
                   <div className="space-y-2">
                     <Label htmlFor="cuid">CUID</Label>
-                    <Input
-                      id="cuid"
-                      value={cuid}
-                      onChange={(e) => setCuid(e.target.value)}
-                      placeholder="e.g. JOH482917"
-                      required
-                    />
+                    <Input id="cuid" value={cuid} onChange={(e) => setCuid(e.target.value)} placeholder="e.g. JOH482917" required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="student-phone">Phone</Label>
-                    <Input
-                      id="student-phone"
-                      type="tel"
-                      value={studentPhone}
-                      onChange={(e) => setStudentPhone(e.target.value)}
-                      required
-                    />
+                    <Input id="student-phone" type="tel" value={studentPhone} onChange={(e) => setStudentPhone(e.target.value)} required />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Signing in..." : "Sign in as student"}
                   </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Don't have a CUID? Ask your admin.
-                  </p>
+                  <p className="text-xs text-muted-foreground text-center">Don't have a CUID? Ask your admin.</p>
                 </form>
               </TabsContent>
+
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Admin Email</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
@@ -171,27 +170,54 @@ function AuthPage() {
                   </Button>
                 </form>
               </TabsContent>
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4 mt-4">
-                  <p className="text-xs text-muted-foreground">
-                    Sign up creates an admin account. Students are created by admins from the Students page.
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full name</Label>
-                    <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+
+              <TabsContent value="register">
+                {registered ? (
+                  <div className="mt-4 space-y-4 text-center py-4">
+                    <div className="flex justify-center">
+                      <CheckCircle2 className="h-12 w-12 text-primary" />
+                    </div>
+                    <h3 className="font-semibold">Registration submitted</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your registration request has been submitted successfully. Your account will be
+                      activated after approval by the platform administrator. You'll receive an email
+                      with a password setup link once approved.
+                    </p>
+                    <Button variant="outline" onClick={() => setRegistered(false)} className="w-full">
+                      Register another
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email-up">Email</Label>
-                    <Input id="email-up" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password-up">Password</Label>
-                    <Input id="password-up" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating..." : "Create admin account"}
-                  </Button>
-                </form>
+                ) : (
+                  <form onSubmit={handleRegister} className="space-y-3 mt-4">
+                    <p className="text-xs text-muted-foreground">
+                      Register your institute. After approval by the platform administrator, you'll receive
+                      a password setup link by email.
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="inst-name">Institute Name</Label>
+                      <Input id="inst-name" value={instName} onChange={(e) => setInstName(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="owner-name">Owner Name</Label>
+                      <Input id="owner-name" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mobile">Mobile Number</Label>
+                      <Input id="mobile" type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="inst-email">Email Address</Label>
+                      <Input id="inst-email" type="email" value={instEmail} onChange={(e) => setInstEmail(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label>
+                      <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} required />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Submitting..." : "Submit registration"}
+                    </Button>
+                  </form>
+                )}
               </TabsContent>
             </Tabs>
             <div className="relative my-6">

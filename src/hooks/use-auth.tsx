@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "student";
+export type AppRole = "admin" | "student" | "super_admin";
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
@@ -34,14 +34,18 @@ export function useAuth() {
       const { data } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
+        .eq("user_id", user.id);
       if (cancelled) return;
-      if (data?.role) {
-        setRole(data.role as AppRole);
+      const roles = (data ?? []).map((r) => r.role as AppRole);
+      // Priority: super_admin > admin > student
+      const resolved =
+        roles.find((r) => r === "super_admin") ??
+        roles.find((r) => r === "admin") ??
+        roles.find((r) => r === "student");
+      if (resolved) {
+        setRole(resolved);
         return;
       }
-      // Trigger may not have committed yet right after signup — retry briefly.
       if (attempt < 5) {
         setTimeout(() => fetchRole(attempt + 1), 400);
         return;
