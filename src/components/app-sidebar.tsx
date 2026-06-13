@@ -12,6 +12,7 @@ import {
   GraduationCap,
   NotebookPen,
   LifeBuoy,
+  Shield,
 } from "lucide-react";
 import {
   Sidebar,
@@ -51,6 +52,11 @@ const studentItems = [
   { title: "Help Desk", url: "/help-desk", icon: LifeBuoy },
 ] as const;
 
+const superAdminItems = [
+  { title: "Institutes", url: "/super-admin", icon: Shield },
+] as const;
+
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -58,7 +64,12 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
 
-  const items = role === "admin" ? adminItems : studentItems;
+  const items =
+    role === "super_admin"
+      ? superAdminItems
+      : role === "admin"
+        ? adminItems
+        : studentItems;
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -81,7 +92,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>
-            {role === "admin" ? "Admin" : "Student"}
+            {role === "super_admin" ? "Platform" : role === "admin" ? "Admin" : "Student"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
