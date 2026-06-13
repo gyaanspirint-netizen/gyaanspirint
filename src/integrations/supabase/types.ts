@@ -241,6 +241,54 @@ export type Database = {
           },
         ]
       }
+      institutes: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          city: string
+          created_at: string
+          email: string
+          id: string
+          mobile: string
+          name: string
+          owner_id: string | null
+          owner_name: string
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          city: string
+          created_at?: string
+          email: string
+          id?: string
+          mobile: string
+          name: string
+          owner_id?: string | null
+          owner_name: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          city?: string
+          created_at?: string
+          email?: string
+          id?: string
+          mobile?: string
+          name?: string
+          owner_id?: string | null
+          owner_name?: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -510,6 +558,7 @@ export type Database = {
     }
     Functions: {
       claim_admin_role: { Args: never; Returns: undefined }
+      current_institute_status: { Args: never; Returns: string }
       current_owner_id: { Args: never; Returns: string }
       current_student_batch_ids: { Args: never; Returns: string[] }
       has_role: {
@@ -519,6 +568,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "student" | "super_admin"
