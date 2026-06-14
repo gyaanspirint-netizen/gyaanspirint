@@ -160,7 +160,10 @@ function AuthPage() {
                     <Label htmlFor="password">Password</Label>
                     <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex justify-between items-center">
+                    <Link to="/activate" className="text-xs text-primary hover:underline">
+                      Have an activation code?
+                    </Link>
                     <Link to="/forgot-password" className="text-xs text-primary hover:underline">
                       Forgot password?
                     </Link>
