@@ -9,8 +9,8 @@ import {
   rejectInstitute,
   suspendInstitute,
   reactivateInstitute,
+  regenerateActivationCode,
 } from "@/lib/institutes.functions";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,8 @@ import {
   XCircle,
   Users,
   GraduationCap,
+  Copy,
+  RefreshCw,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/super-admin")({
@@ -64,6 +66,8 @@ type Institute = {
   status: string;
   created_at: string;
   rejection_reason: string | null;
+  activation_code: string | null;
+  activated_at: string | null;
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -76,6 +80,45 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge className={variant[status] ?? ""} variant="secondary">{status}</Badge>;
 }
 
+async function copyCode(code: string) {
+  try {
+    await navigator.clipboard.writeText(code);
+    toast.success("Activation code copied");
+  } catch {
+    toast.error("Copy failed");
+  }
+}
+
+function ActivationCodeCell({
+  code,
+  onRegenerate,
+  busy,
+}: {
+  code: string | null;
+  onRegenerate: () => void;
+  busy: boolean;
+}) {
+  if (!code) return <span className="text-xs text-muted-foreground">—</span>;
+  return (
+    <div className="flex items-center gap-1">
+      <code className="px-2 py-0.5 rounded bg-muted text-xs font-mono">{code}</code>
+      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyCode(code)} title="Copy">
+        <Copy className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-7 w-7"
+        onClick={onRegenerate}
+        disabled={busy}
+        title="Regenerate"
+      >
+        <RefreshCw className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
+
 function SuperAdminPage() {
   const list = useServerFn(listInstitutes);
   const stats = useServerFn(superAdminStats);
@@ -83,6 +126,7 @@ function SuperAdminPage() {
   const reject = useServerFn(rejectInstitute);
   const suspend = useServerFn(suspendInstitute);
   const reactivate = useServerFn(reactivateInstitute);
+  const regen = useServerFn(regenerateActivationCode);
 
   const [data, setData] = useState<{ institutes: Institute[] } | null>(null);
   const [statData, setStatData] = useState<any>(null);
@@ -92,11 +136,12 @@ function SuperAdminPage() {
   const [rejectOpen, setRejectOpen] = useState<Institute | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [detail, setDetail] = useState<Institute | null>(null);
+  const [approvedDialog, setApprovedDialog] = useState<{ name: string; code: string } | null>(null);
 
   const reload = async () => {
     try {
       const [d, s] = await Promise.all([list(), stats()]);
-      setData(d);
+      setData(d as any);
       setStatData(s);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to load");
@@ -117,7 +162,8 @@ function SuperAdminPage() {
         i.name.toLowerCase().includes(q) ||
         i.email.toLowerCase().includes(q) ||
         i.city.toLowerCase().includes(q) ||
-        i.owner_name.toLowerCase().includes(q)
+        i.owner_name.toLowerCase().includes(q) ||
+        (i.activation_code ?? "").toLowerCase().includes(q)
       );
     });
   }, [data, search, filter]);
@@ -126,14 +172,25 @@ function SuperAdminPage() {
     setBusy(inst.id);
     try {
       const res = await approve({ data: { id: inst.id } });
-      // Send password setup email via Supabase
-      await supabase.auth.resetPasswordForEmail(res.email, {
-        redirectTo: `${window.location.origin}/setup-password`,
-      });
-      toast.success(`Approved. Password setup email sent to ${res.email}`);
+      toast.success("Institute approved");
+      setApprovedDialog({ name: inst.name, code: res.activationCode });
       reload();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Approval failed");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const doRegen = async (inst: Institute) => {
+    setBusy(inst.id);
+    try {
+      const res = await regen({ data: { id: inst.id } });
+      toast.success("New activation code generated");
+      await copyCode(res.activationCode);
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Regenerate failed");
     } finally {
       setBusy(null);
     }
@@ -218,7 +275,7 @@ function SuperAdminPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
-              placeholder="Search by name, email, owner or city..."
+              placeholder="Search by name, email, owner, city or code..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-sm"
@@ -237,7 +294,7 @@ function SuperAdminPage() {
             </Select>
           </div>
 
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -246,13 +303,14 @@ function SuperAdminPage() {
                   <TableHead>City</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Activation Code</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       No institutes found.
                     </TableCell>
                   </TableRow>
@@ -266,7 +324,14 @@ function SuperAdminPage() {
                       <TableCell>
                         <StatusBadge status={inst.status} />
                       </TableCell>
-                      <TableCell className="text-right space-x-1">
+                      <TableCell>
+                        <ActivationCodeCell
+                          code={inst.activation_code}
+                          onRegenerate={() => doRegen(inst)}
+                          busy={busy === inst.id}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right space-x-1 whitespace-nowrap">
                         <Button size="sm" variant="ghost" onClick={() => setDetail(inst)}>
                           View
                         </Button>
@@ -314,6 +379,56 @@ function SuperAdminPage() {
         </CardContent>
       </Card>
 
+      <Dialog open={!!approvedDialog} onOpenChange={(o) => !o && setApprovedDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Institute Approved
+            </DialogTitle>
+            <DialogDescription>
+              Share this activation code with{" "}
+              <span className="font-medium text-foreground">{approvedDialog?.name}</span> via WhatsApp,
+              phone, or message. They'll use it to set their password and sign in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <div className="text-xs text-muted-foreground">Activation Code</div>
+            <div className="flex items-center justify-between rounded-md border bg-muted/40 px-4 py-3">
+              <code className="font-mono text-xl tracking-wider">{approvedDialog?.code}</code>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => approvedDialog && copyCode(approvedDialog.code)}
+              >
+                <Copy className="h-4 w-4 mr-1.5" /> Copy
+              </Button>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!approvedDialog) return;
+                const inst = data?.institutes.find((i) => i.name === approvedDialog.name);
+                if (!inst) return;
+                try {
+                  const res = await regen({ data: { id: inst.id } });
+                  setApprovedDialog({ name: approvedDialog.name, code: res.activationCode });
+                  toast.success("New activation code generated");
+                  reload();
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Regenerate failed");
+                }
+              }}
+            >
+              <RefreshCw className="h-4 w-4 mr-1.5" /> Regenerate Code
+            </Button>
+            <Button onClick={() => setApprovedDialog(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!rejectOpen} onOpenChange={(o) => !o && setRejectOpen(null)}>
         <DialogContent>
           <DialogHeader>
@@ -351,6 +466,18 @@ function SuperAdminPage() {
               <div><span className="text-muted-foreground">Mobile: </span>{detail.mobile}</div>
               <div><span className="text-muted-foreground">City: </span>{detail.city}</div>
               <div><span className="text-muted-foreground">Status: </span><StatusBadge status={detail.status} /></div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Activation Code: </span>
+                <ActivationCodeCell
+                  code={detail.activation_code}
+                  onRegenerate={() => doRegen(detail)}
+                  busy={busy === detail.id}
+                />
+              </div>
+              <div>
+                <span className="text-muted-foreground">Activated: </span>
+                {detail.activated_at ? new Date(detail.activated_at).toLocaleString() : "Not yet"}
+              </div>
               <div><span className="text-muted-foreground">Registered: </span>{new Date(detail.created_at).toLocaleString()}</div>
               {detail.rejection_reason && (
                 <div><span className="text-muted-foreground">Rejection reason: </span>{detail.rejection_reason}</div>

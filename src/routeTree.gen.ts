@@ -14,6 +14,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PendingApprovalRouteImport } from './routes/pending-approval'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ActivateRouteImport } from './routes/activate'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTestsRouteImport } from './routes/_authenticated/tests'
@@ -54,6 +55,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivateRoute = ActivateRouteImport.update({
+  id: '/activate',
+  path: '/activate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -138,6 +144,7 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activate': typeof ActivateRoute
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/pending-approval': typeof PendingApprovalRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activate': typeof ActivateRoute
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/pending-approval': typeof PendingApprovalRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/activate': typeof ActivateRoute
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/pending-approval': typeof PendingApprovalRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activate'
     | '/auth'
     | '/forgot-password'
     | '/pending-approval'
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activate'
     | '/auth'
     | '/forgot-password'
     | '/pending-approval'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/activate'
     | '/auth'
     | '/forgot-password'
     | '/pending-approval'
@@ -277,6 +289,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ActivateRoute: typeof ActivateRoute
   AuthRoute: typeof AuthRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   PendingApprovalRoute: typeof PendingApprovalRoute
@@ -319,6 +332,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activate': {
+      id: '/activate'
+      path: '/activate'
+      fullPath: '/activate'
+      preLoaderRoute: typeof ActivateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -476,6 +496,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ActivateRoute: ActivateRoute,
   AuthRoute: AuthRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   PendingApprovalRoute: PendingApprovalRoute,
