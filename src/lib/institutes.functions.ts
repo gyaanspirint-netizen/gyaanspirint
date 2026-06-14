@@ -256,6 +256,7 @@ export const activateWithCode = createServerFn({ method: "POST" })
     if (!inst.activation_code || inst.activation_code !== codeUpper) {
       throw new Error("Invalid activation code.");
     }
+    if (!inst.owner_id) throw new Error("This institute has no owner account.");
 
     const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(inst.owner_id, {
       password: data.password,
