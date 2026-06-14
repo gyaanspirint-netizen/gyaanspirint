@@ -412,9 +412,14 @@ function SuperAdminPage() {
                 if (!approvedDialog) return;
                 const inst = data?.institutes.find((i) => i.name === approvedDialog.name);
                 if (!inst) return;
-                await doRegen(inst);
-                const res = await regen({ data: { id: inst.id } }).catch(() => null);
-                if (res) setApprovedDialog({ name: approvedDialog.name, code: res.activationCode });
+                try {
+                  const res = await regen({ data: { id: inst.id } });
+                  setApprovedDialog({ name: approvedDialog.name, code: res.activationCode });
+                  toast.success("New activation code generated");
+                  reload();
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Regenerate failed");
+                }
               }}
             >
               <RefreshCw className="h-4 w-4 mr-1.5" /> Regenerate Code
