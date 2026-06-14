@@ -125,6 +125,26 @@ export const superAdminStats = createServerFn({ method: "GET" })
 const IdSchema = z.object({ id: z.string().uuid() });
 const RejectSchema = z.object({ id: z.string().uuid(), reason: z.string().trim().max(500).optional() });
 
+async function ensureActivationCode(
+  supabaseAdmin: any,
+  id: string,
+): Promise<string> {
+  const { data: row } = await supabaseAdmin
+    .from("institutes")
+    .select("activation_code")
+    .eq("id", id)
+    .single();
+  if (row?.activation_code) return row.activation_code;
+  const { data: gen, error: genErr } = await supabaseAdmin.rpc("generate_activation_code");
+  if (genErr || !gen) throw new Error(genErr?.message ?? "Failed to generate code");
+  const { error: updErr } = await supabaseAdmin
+    .from("institutes")
+    .update({ activation_code: gen, activation_code_generated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (updErr) throw new Error(updErr.message);
+  return gen as string;
+}
+
 export const approveInstitute = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => IdSchema.parse(input))
@@ -135,10 +155,31 @@ export const approveInstitute = createServerFn({ method: "POST" })
       .from("institutes")
       .update({ status: "active", approved_at: new Date().toISOString(), approved_by: context.userId, rejection_reason: null })
       .eq("id", data.id)
-      .select("email")
+      .select("email,activation_code")
       .single();
     if (error) throw new Error(error.message);
-    return { ok: true, email: inst.email };
+    const code = inst.activation_code ?? (await ensureActivationCode(supabaseAdmin, data.id));
+    return { ok: true, email: inst.email, activationCode: code };
+  });
+
+export const regenerateActivationCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => IdSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: gen, error: genErr } = await supabaseAdmin.rpc("generate_activation_code");
+    if (genErr || !gen) throw new Error(genErr?.message ?? "Failed to generate code");
+    const { error } = await supabaseAdmin
+      .from("institutes")
+      .update({
+        activation_code: gen,
+        activation_code_generated_at: new Date().toISOString(),
+        activated_at: null,
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true, activationCode: gen as string };
   });
 
 export const rejectInstitute = createServerFn({ method: "POST" })
@@ -181,4 +222,50 @@ export const reactivateInstitute = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+const ActivateSchema = z.object({
+  email: z.string().trim().email().max(255),
+  code: z.string().trim().min(4).max(40),
+  password: z
+    .string()
+    .min(8)
+    .max(128)
+    .regex(/[A-Z]/, "Must contain an uppercase letter")
+    .regex(/[0-9]/, "Must contain a number"),
+});
+
+// Public: activates an approved institute by code and sets the owner's password.
+export const activateWithCode = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => ActivateSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const emailLower = data.email.toLowerCase();
+    const codeUpper = data.code.trim().toUpperCase();
+
+    const { data: inst, error } = await supabaseAdmin
+      .from("institutes")
+      .select("id,owner_id,status,activation_code")
+      .ilike("email", emailLower)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!inst) throw new Error("No institute found for this email.");
+    if (inst.status !== "active") {
+      throw new Error("This institute is not approved yet. Please contact the platform admin.");
+    }
+    if (!inst.activation_code || inst.activation_code !== codeUpper) {
+      throw new Error("Invalid activation code.");
+    }
+
+    const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(inst.owner_id, {
+      password: data.password,
+    });
+    if (updErr) throw new Error(updErr.message);
+
+    await supabaseAdmin
+      .from("institutes")
+      .update({ activated_at: new Date().toISOString() })
+      .eq("id", inst.id);
+
+    return { ok: true, email: emailLower };
   });
