@@ -243,6 +243,9 @@ export type Database = {
       }
       institutes: {
         Row: {
+          activated_at: string | null
+          activation_code: string | null
+          activation_code_generated_at: string | null
           approved_at: string | null
           approved_by: string | null
           city: string
@@ -258,6 +261,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activated_at?: string | null
+          activation_code?: string | null
+          activation_code_generated_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
           city: string
@@ -273,6 +279,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activated_at?: string | null
+          activation_code?: string | null
+          activation_code_generated_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
           city?: string
@@ -561,6 +570,7 @@ export type Database = {
       current_institute_status: { Args: never; Returns: string }
       current_owner_id: { Args: never; Returns: string }
       current_student_batch_ids: { Args: never; Returns: string[] }
+      generate_activation_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
