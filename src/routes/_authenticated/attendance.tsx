@@ -92,19 +92,26 @@ function AdminAttendance() {
     }
     setStudents(data ?? []);
     const all = new Set<string>();
-    (data ?? []).forEach((s) => s.batch.split(",").map((b) => b.trim()).filter(Boolean).forEach((b) => all.add(b)));
+    let hasUnbatched = false;
+    (data ?? []).forEach((s) => {
+      const parts = (s.batch ?? "").split(",").map((b) => b.trim()).filter(Boolean);
+      if (parts.length === 0) hasUnbatched = true;
+      parts.forEach((b) => all.add(b));
+    });
     const list = Array.from(all).sort();
+    if (hasUnbatched) list.unshift("__none__");
     setBatchList(list);
     if (list.length && !selectedBatch) setSelectedBatch(list[0]);
   };
 
   const loadForDate = async (d: string, batch: string) => {
     if (!batch) { setTodayMap({}); return; }
+    const dbBatch = batch === "__none__" ? "" : batch;
     const { data, error } = await supabase
       .from("attendance")
       .select("id, student_id, date, status")
       .eq("date", d)
-      .eq("batch", batch);
+      .eq("batch", dbBatch);
     if (error) {
       toast.error(error.message);
       return;
@@ -146,6 +153,7 @@ function AdminAttendance() {
 
   const mark = async (studentId: string, status: "present" | "absent") => {
     if (!selectedBatch) { toast.error("Select a batch"); return; }
+    const dbBatch = selectedBatch === "__none__" ? "" : selectedBatch;
     setSavingId(studentId);
     const { data: userData } = await supabase.auth.getUser();
     const { error } = await supabase.from("attendance").upsert(
@@ -153,7 +161,7 @@ function AdminAttendance() {
         student_id: studentId,
         date,
         status,
-        batch: selectedBatch,
+        batch: dbBatch,
         marked_by: userData.user?.id ?? null,
         owner_id: userData.user?.id ?? "",
       },
@@ -170,9 +178,15 @@ function AdminAttendance() {
   };
 
   const studentsInBatch = useMemo(
-    () => students.filter((s) => s.batch.split(",").map((b) => b.trim()).includes(selectedBatch)),
+    () => {
+      if (selectedBatch === "__none__") {
+        return students.filter((s) => !(s.batch ?? "").split(",").map((b) => b.trim()).filter(Boolean).length);
+      }
+      return students.filter((s) => (s.batch ?? "").split(",").map((b) => b.trim()).includes(selectedBatch));
+    },
     [students, selectedBatch],
   );
+
 
   const stats: StudentStats[] = useMemo(() => {
     return students.map((s) => {
@@ -255,7 +269,7 @@ function AdminAttendance() {
                   <Select value={selectedBatch} onValueChange={setSelectedBatch}>
                     <SelectTrigger><SelectValue placeholder="Pick batch" /></SelectTrigger>
                     <SelectContent>
-                      {batchList.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                      {batchList.map((b) => <SelectItem key={b} value={b}>{b === "__none__" ? "No batch (unassigned)" : b}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -295,7 +309,7 @@ function AdminAttendance() {
                             <TableCell className="font-medium">
                               {s.name}
                             </TableCell>
-                            <TableCell>{selectedBatch}</TableCell>
+                            <TableCell>{selectedBatch === "__none__" ? "—" : selectedBatch}</TableCell>
                             <TableCell>
                               {current === "present" ? (
                                 <Badge>Present</Badge>

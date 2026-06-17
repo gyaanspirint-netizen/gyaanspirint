@@ -9,7 +9,7 @@ const studentInput = z.object({
   father_name: z.string().trim().min(1).max(100),
   student_phone: z.string().trim().min(5).max(20).regex(/^[0-9+\-\s()]+$/),
   parent_phone: z.string().trim().min(5).max(20).regex(/^[0-9+\-\s()]+$/),
-  batch: z.string().trim().min(1).max(50),
+  batch: z.string().trim().max(200).optional().default(""),
   admission_date: z.string().min(1),
 });
 

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import logoAsset from "@/assets/gyanspirint-logo.png.asset.json";
 
 const adminItems = [
   { title: "Institute Dashboard", url: "/admin", icon: LayoutDashboard },
@@ -80,12 +81,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded-md text-primary-foreground shadow-sm shrink-0"
-            style={{ background: "var(--gradient-brand)" }}
-          >
-            <GraduationCap className="h-4 w-4" />
-          </div>
+          <img
+            src={logoAsset.url}
+            alt="Gyanspirint"
+            className="h-8 w-8 rounded-md object-contain bg-white shrink-0"
+          />
           {!collapsed && <span className="font-semibold tracking-tight">Gyanspirint</span>}
         </div>
       </SidebarHeader>

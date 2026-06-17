@@ -76,7 +76,7 @@ const studentSchema = z.object({
     .min(5, "Phone is too short")
     .max(20)
     .regex(/^[0-9+\-\s()]+$/, "Invalid phone"),
-  batch: z.string().trim().min(1, "Batch is required").max(50),
+  batch: z.string().trim().max(200).optional().default(""),
   admission_date: z.string().min(1, "Admission date is required"),
 });
 
@@ -373,13 +373,13 @@ function StudentsPage() {
               error={errors.parent_phone}
             />
             <div className="space-y-2">
-              <Label htmlFor="batch">Batch</Label>
+              <Label htmlFor="batch">Batch <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
               {batches.length === 0 ? (
                 <Input
                   id="batch"
                   value={form.batch}
                   onChange={(e) => setForm({ ...form, batch: e.target.value })}
-                  placeholder="Create batches first"
+                  placeholder="Leave empty — assign later"
                 />
               ) : (
                 <div className="rounded-md border p-3 space-y-2 max-h-48 overflow-y-auto">

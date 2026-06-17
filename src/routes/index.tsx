@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { GraduationCap, Users, Calendar, Wallet, ClipboardCheck, ArrowRight, Sparkles } from "lucide-react";
+import logoAsset from "@/assets/gyanspirint-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,12 +34,11 @@ function Landing() {
       <header className="relative z-10 border-b border-border/60 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-primary-foreground shadow-md"
-              style={{ background: "var(--gradient-brand)" }}
-            >
-              <GraduationCap className="h-5 w-5" />
-            </div>
+            <img
+              src={logoAsset.url}
+              alt="Gyanspirint"
+              className="h-10 w-10 rounded-lg object-contain bg-white shadow-md"
+            />
             <span className="text-lg font-semibold tracking-tight">Gyanspirint</span>
           </div>
           <Link
