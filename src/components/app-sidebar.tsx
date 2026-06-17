@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import logoAsset from "@/assets/gyanspirint-logo.png.asset.json";
 
 const adminItems = [
   { title: "Institute Dashboard", url: "/admin", icon: LayoutDashboard },
