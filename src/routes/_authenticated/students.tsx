@@ -373,13 +373,13 @@ function StudentsPage() {
               error={errors.parent_phone}
             />
             <div className="space-y-2">
-              <Label htmlFor="batch">Batch</Label>
+              <Label htmlFor="batch">Batch <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
               {batches.length === 0 ? (
                 <Input
                   id="batch"
                   value={form.batch}
                   onChange={(e) => setForm({ ...form, batch: e.target.value })}
-                  placeholder="Create batches first"
+                  placeholder="Leave empty — assign later"
                 />
               ) : (
                 <div className="rounded-md border p-3 space-y-2 max-h-48 overflow-y-auto">
