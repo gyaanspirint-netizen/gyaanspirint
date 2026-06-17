@@ -76,7 +76,7 @@ const studentSchema = z.object({
     .min(5, "Phone is too short")
     .max(20)
     .regex(/^[0-9+\-\s()]+$/, "Invalid phone"),
-  batch: z.string().trim().min(1, "Batch is required").max(50),
+  batch: z.string().trim().max(200).optional().default(""),
   admission_date: z.string().min(1, "Admission date is required"),
 });
 
