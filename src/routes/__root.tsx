@@ -81,11 +81,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Gyanspirint — Coaching & Tuition Management" },
       { name: "description", content: "All-in-one coaching institute management: students, batches, attendance, fees, tests, and schedules." },
       { name: "author", content: "Gyanspirint" },
-      { property: "og:title", content: "Gyanspirint" },
+      { property: "og:title", content: "Gyanspirint — Coaching & Tuition Management" },
       { property: "og:description", content: "All-in-one coaching institute management: students, batches, attendance, fees, tests, and schedules." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@gyanspirint" },
+      { name: "twitter:title", content: "Gyanspirint — Coaching & Tuition Management" },
+      { name: "twitter:description", content: "All-in-one coaching institute management: students, batches, attendance, fees, tests, and schedules." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f9245499-f061-4d78-b8ae-39084d666a6c/id-preview-5c28d3b1--0fd8ee13-8b7f-45a4-a8dd-d52121661b4b.lovable.app-1781698697330.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f9245499-f061-4d78-b8ae-39084d666a6c/id-preview-5c28d3b1--0fd8ee13-8b7f-45a4-a8dd-d52121661b4b.lovable.app-1781698697330.png" },
     ],
     links: [
       {
