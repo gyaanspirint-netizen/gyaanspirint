@@ -237,12 +237,12 @@ function StudentsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Students</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Students</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Manage all enrolled students.
           </p>
         </div>
-        <Button onClick={openAdd}>
+        <Button onClick={openAdd} className="hidden sm:inline-flex">
           <Plus className="h-4 w-4 mr-2" /> Add Student
         </Button>
       </div>
@@ -250,13 +250,13 @@ function StudentsPage() {
       <Card>
         <CardHeader className="gap-3">
           <CardTitle>All students</CardTitle>
-          <div className="relative max-w-sm">
+          <div className="relative w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search name, phone, batch..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-11 sm:h-10"
             />
           </div>
         </CardHeader>
@@ -268,68 +268,138 @@ function StudentsPage() {
           ) : filtered.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground text-sm">
               {students.length === 0
-                ? "No students yet. Click Add Student to begin."
+                ? "No students yet. Tap Add Student to begin."
                 : "No students match your search."}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>CUID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Father</TableHead>
-                    <TableHead>Student Phone</TableHead>
-                    <TableHead>Parent Phone</TableHead>
-                    <TableHead>Batch</TableHead>
-                    <TableHead>Admission</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell>
-                        {s.cuid ? (
-                          <Badge variant="secondary" className="font-mono">
-                            {s.cuid}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">{s.name}</TableCell>
-                      <TableCell>{s.father_name}</TableCell>
-                      <TableCell>{s.student_phone}</TableCell>
-                      <TableCell>{s.parent_phone}</TableCell>
-                      <TableCell>{s.batch}</TableCell>
-                      <TableCell>{s.admission_date}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEdit(s)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeleteId(s.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <>
+              {/* Mobile card list */}
+              <div className="md:hidden space-y-3">
+                {filtered.map((s) => (
+                  <div
+                    key={s.id}
+                    className="rounded-xl border bg-card p-4 shadow-sm active:scale-[0.99] transition-transform"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold truncate">{s.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          S/o {s.father_name}
+                        </p>
+                      </div>
+                      {s.cuid && (
+                        <Badge variant="secondary" className="font-mono text-[10px] shrink-0">
+                          {s.cuid}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-muted-foreground">Student</p>
+                        <p className="font-medium truncate">{s.student_phone}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Parent</p>
+                        <p className="font-medium truncate">{s.parent_phone}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Batch</p>
+                        <p className="font-medium truncate">{s.batch || "—"}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 h-10"
+                        onClick={() => openEdit(s)}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-10 w-10 p-0"
+                        onClick={() => setDeleteId(s.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>CUID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Father</TableHead>
+                      <TableHead>Student Phone</TableHead>
+                      <TableHead>Parent Phone</TableHead>
+                      <TableHead>Batch</TableHead>
+                      <TableHead>Admission</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell>
+                          {s.cuid ? (
+                            <Badge variant="secondary" className="font-mono">
+                              {s.cuid}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium">{s.name}</TableCell>
+                        <TableCell>{s.father_name}</TableCell>
+                        <TableCell>{s.student_phone}</TableCell>
+                        <TableCell>{s.parent_phone}</TableCell>
+                        <TableCell>{s.batch}</TableCell>
+                        <TableCell>{s.admission_date}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEdit(s)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteId(s.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
+
+      {/* Mobile floating action button */}
+      <button
+        type="button"
+        aria-label="Add student"
+        onClick={openAdd}
+        className="sm:hidden fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[520px]">
