@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import logoAsset from "@/assets/gyanspirint-logo.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -66,13 +68,19 @@ function AuthedLayout() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center border-b border-border/60 bg-card/40 backdrop-blur px-4 gap-3 sticky top-0 z-20">
-            <SidebarTrigger />
-            <h1 className="text-sm font-semibold tracking-tight">Gyanspirint</h1>
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-14 flex items-center border-b border-border/60 bg-card/40 backdrop-blur px-3 sm:px-4 gap-2 sm:gap-3 sticky top-0 z-20">
+            <SidebarTrigger className="h-10 w-10" />
+            <img
+              src={logoAsset.url}
+              alt="Gyanspirint"
+              className="md:hidden h-7 w-7 rounded-md object-contain bg-white shrink-0"
+            />
+            <h1 className="text-sm font-semibold tracking-tight truncate">Gyanspirint</h1>
           </header>
-          <main className="flex-1 p-6">{checked ? <Outlet /> : null}</main>
+          <main className="flex-1 p-4 sm:p-6 pb-24 md:pb-6">{checked ? <Outlet /> : null}</main>
         </div>
+        <MobileBottomNav />
       </div>
     </SidebarProvider>
   );
