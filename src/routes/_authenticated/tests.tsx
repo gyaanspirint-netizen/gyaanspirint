@@ -402,7 +402,8 @@ function TestsPage() {
             <CardTitle>Past Tests</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border overflow-x-auto">
+            <div className="md:hidden space-y-3">{past.map(renderCard)}</div>
+            <div className="hidden md:block rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
