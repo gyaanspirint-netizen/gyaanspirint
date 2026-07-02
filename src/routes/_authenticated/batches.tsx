@@ -290,54 +290,89 @@ function BatchesPage() {
               No batches yet. Click Add Batch to create one.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Start</TableHead>
-                    <TableHead>End</TableHead>
-                    <TableHead>Schedule</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Teachers</TableHead>
-                    <TableHead>Students</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((b) => (
-                    <TableRow key={b.id}>
-                      <TableCell className="font-medium">{b.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{b.course_name ?? "—"}</TableCell>
-                      <TableCell>{b.start_time.slice(0, 5)}</TableCell>
-                      <TableCell>{b.end_time.slice(0, 5)}</TableCell>
-                      <TableCell className="text-xs">{scheduleLabel(b)}</TableCell>
-                      <TableCell>
-                        <Badge variant={b.status === "active" ? "default" : "secondary"}>
-                          {b.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{teacherCount(b.id)}</TableCell>
-                      <TableCell>{counts[b.name] ?? 0}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" title="Assign teachers" onClick={() => openAssignTeachers(b)}>
-                            <Users className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" title="Edit batch" onClick={() => openEdit(b)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" title="Delete batch" onClick={() => setDeleteId(b.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <>
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {rows.map((b) => (
+                  <div key={b.id} className="rounded-2xl border bg-card p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{b.name}</p>
+                        {b.course_name && <p className="text-xs text-muted-foreground truncate">{b.course_name}</p>}
+                      </div>
+                      <Badge variant={b.status === "active" ? "default" : "secondary"}>{b.status}</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                      <div><span className="text-muted-foreground">Time: </span>{b.start_time.slice(0,5)}–{b.end_time.slice(0,5)}</div>
+                      <div><span className="text-muted-foreground">Days: </span>{scheduleLabel(b)}</div>
+                      <div><span className="text-muted-foreground">Students: </span>{counts[b.name] ?? 0}</div>
+                      <div><span className="text-muted-foreground">Teachers: </span>{teacherCount(b.id)}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="flex-1 h-10 rounded-xl" onClick={() => openEdit(b)}>
+                        <Pencil className="h-4 w-4 mr-1" /> Edit
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-10 w-10 rounded-xl" onClick={() => openAssignTeachers(b)}>
+                        <Users className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-10 w-10 rounded-xl" onClick={() => setDeleteId(b.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Course</TableHead>
+                      <TableHead>Start</TableHead>
+                      <TableHead>End</TableHead>
+                      <TableHead>Schedule</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Teachers</TableHead>
+                      <TableHead>Students</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((b) => (
+                      <TableRow key={b.id}>
+                        <TableCell className="font-medium">{b.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{b.course_name ?? "—"}</TableCell>
+                        <TableCell>{b.start_time.slice(0, 5)}</TableCell>
+                        <TableCell>{b.end_time.slice(0, 5)}</TableCell>
+                        <TableCell className="text-xs">{scheduleLabel(b)}</TableCell>
+                        <TableCell>
+                          <Badge variant={b.status === "active" ? "default" : "secondary"}>
+                            {b.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{teacherCount(b.id)}</TableCell>
+                        <TableCell>{counts[b.name] ?? 0}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" title="Assign teachers" onClick={() => openAssignTeachers(b)}>
+                              <Users className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Edit batch" onClick={() => openEdit(b)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Delete batch" onClick={() => setDeleteId(b.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
