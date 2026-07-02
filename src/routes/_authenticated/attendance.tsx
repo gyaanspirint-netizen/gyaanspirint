@@ -291,75 +291,128 @@ function AdminAttendance() {
                   No students in this batch.
                 </p>
               ) : (
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Batch</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {studentsInBatch.map((s) => {
-                        const current = todayMap[s.id];
-                        return (
-                          <TableRow key={s.id}>
-                            <TableCell className="font-medium">
-                              {s.name}
-                            </TableCell>
-                            <TableCell>{selectedBatch === "__none__" ? "—" : selectedBatch}</TableCell>
-                            <TableCell>
-                              {current === "present" ? (
-                                <Badge>Present</Badge>
-                              ) : current === "absent" ? (
-                                <Badge variant="destructive">Absent</Badge>
-                              ) : (
-                                <Badge variant="outline">Not marked</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right space-x-2">
-                              <Button
-                                size="sm"
-                                variant={
-                                  current === "present" ? "default" : "outline"
-                                }
-                                disabled={savingId === s.id}
-                                onClick={() => mark(s.id, "present")}
-                              >
-                                <Check className="h-4 w-4 mr-1" /> Present
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={
-                                  current === "absent"
-                                    ? "destructive"
-                                    : "outline"
-                                }
-                                disabled={savingId === s.id}
-                                onClick={() => mark(s.id, "absent")}
-                              >
-                                <X className="h-4 w-4 mr-1" /> Absent
-                              </Button>
-                              {current === "absent" && (
+                <>
+                  {/* Mobile cards */}
+                  <div className="md:hidden space-y-3">
+                    {studentsInBatch.map((s) => {
+                      const current = todayMap[s.id];
+                      return (
+                        <div key={s.id} className="rounded-2xl border bg-card p-4 shadow-sm">
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="min-w-0">
+                              <p className="font-semibold truncate">{s.name}</p>
+                              <p className="text-xs text-muted-foreground">{selectedBatch === "__none__" ? "No batch" : selectedBatch}</p>
+                            </div>
+                            {current === "present" ? <Badge>Present</Badge>
+                              : current === "absent" ? <Badge variant="destructive">Absent</Badge>
+                              : <Badge variant="outline">Not marked</Badge>}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              size="lg"
+                              className="h-12 rounded-xl"
+                              variant={current === "present" ? "default" : "outline"}
+                              disabled={savingId === s.id}
+                              onClick={() => mark(s.id, "present")}
+                            >
+                              <Check className="h-5 w-5 mr-1" /> Present
+                            </Button>
+                            <Button
+                              size="lg"
+                              className="h-12 rounded-xl"
+                              variant={current === "absent" ? "destructive" : "outline"}
+                              disabled={savingId === s.id}
+                              onClick={() => mark(s.id, "absent")}
+                            >
+                              <X className="h-5 w-5 mr-1" /> Absent
+                            </Button>
+                          </div>
+                          {current === "absent" && s.parent_phone && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full mt-2 h-11 rounded-xl"
+                              onClick={() => notifyParent(s)}
+                            >
+                              <MessageCircle className="h-4 w-4 mr-1" /> Notify Parent
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop table */}
+                  <div className="hidden md:block rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Batch</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {studentsInBatch.map((s) => {
+                          const current = todayMap[s.id];
+                          return (
+                            <TableRow key={s.id}>
+                              <TableCell className="font-medium">
+                                {s.name}
+                              </TableCell>
+                              <TableCell>{selectedBatch === "__none__" ? "—" : selectedBatch}</TableCell>
+                              <TableCell>
+                                {current === "present" ? (
+                                  <Badge>Present</Badge>
+                                ) : current === "absent" ? (
+                                  <Badge variant="destructive">Absent</Badge>
+                                ) : (
+                                  <Badge variant="outline">Not marked</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right space-x-2">
                                 <Button
                                   size="sm"
-                                  variant="outline"
-                                  onClick={() => notifyParent(s)}
-                                  title={s.parent_phone ? "Send WhatsApp to parent" : "No parent phone on record"}
-                                  disabled={!s.parent_phone}
+                                  variant={
+                                    current === "present" ? "default" : "outline"
+                                  }
+                                  disabled={savingId === s.id}
+                                  onClick={() => mark(s.id, "present")}
                                 >
-                                  <MessageCircle className="h-4 w-4 mr-1" /> Notify
+                                  <Check className="h-4 w-4 mr-1" /> Present
                                 </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    current === "absent"
+                                      ? "destructive"
+                                      : "outline"
+                                  }
+                                  disabled={savingId === s.id}
+                                  onClick={() => mark(s.id, "absent")}
+                                >
+                                  <X className="h-4 w-4 mr-1" /> Absent
+                                </Button>
+                                {current === "absent" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => notifyParent(s)}
+                                    title={s.parent_phone ? "Send WhatsApp to parent" : "No parent phone on record"}
+                                    disabled={!s.parent_phone}
+                                  >
+                                    <MessageCircle className="h-4 w-4 mr-1" /> Notify
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

@@ -114,43 +114,72 @@ function HomeworkPage() {
           {items.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">No homework yet.</p>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    {isAdmin && <TableHead>Student</TableHead>}
-                    <TableHead>Note</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((h) => (
-                    <TableRow key={h.id}>
-                      <TableCell>{h.assigned_date}</TableCell>
-                      {isAdmin && <TableCell>{studentName(h.student_id)}</TableCell>}
-                      <TableCell className="max-w-md whitespace-pre-wrap">{h.note}</TableCell>
-                      <TableCell>
-                        {h.done ? <Badge>Done</Badge> : <Badge variant="secondary">Pending</Badge>}
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        {isAdmin && (
-                          <>
-                            <Button size="icon" variant="outline" onClick={() => toggleDone(h)} title={h.done ? "Mark pending" : "Mark done"}>
-                              {h.done ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-                            </Button>
-                            <Button size="icon" variant="outline" onClick={() => remove(h.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </TableCell>
+            <>
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {items.map((h) => (
+                  <div key={h.id} className="rounded-2xl border bg-card p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        {isAdmin && <p className="font-semibold truncate">{studentName(h.student_id)}</p>}
+                        <p className="text-xs text-muted-foreground">{h.assigned_date}</p>
+                      </div>
+                      {h.done ? <Badge>Done</Badge> : <Badge variant="secondary">Pending</Badge>}
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap mb-3">{h.note}</p>
+                    {isAdmin && (
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" className="flex-1 h-10 rounded-xl" onClick={() => toggleDone(h)}>
+                          {h.done ? <><X className="h-4 w-4 mr-1" /> Mark pending</> : <><Check className="h-4 w-4 mr-1" /> Mark done</>}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-10 w-10 rounded-xl" onClick={() => remove(h.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      {isAdmin && <TableHead>Student</TableHead>}
+                      <TableHead>Note</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((h) => (
+                      <TableRow key={h.id}>
+                        <TableCell>{h.assigned_date}</TableCell>
+                        {isAdmin && <TableCell>{studentName(h.student_id)}</TableCell>}
+                        <TableCell className="max-w-md whitespace-pre-wrap">{h.note}</TableCell>
+                        <TableCell>
+                          {h.done ? <Badge>Done</Badge> : <Badge variant="secondary">Pending</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          {isAdmin && (
+                            <>
+                              <Button size="icon" variant="outline" onClick={() => toggleDone(h)} title={h.done ? "Mark pending" : "Mark done"}>
+                                {h.done ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                              </Button>
+                              <Button size="icon" variant="outline" onClick={() => remove(h.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

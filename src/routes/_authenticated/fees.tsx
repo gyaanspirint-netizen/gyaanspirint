@@ -297,75 +297,122 @@ function AdminFees() {
               No fee records yet.
             </p>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Paid</TableHead>
-                    <TableHead>Pending</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Cycle</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fees.map((f) => {
-                    const status = statusOf(f);
-                    return (
-                      <TableRow key={f.id}>
-                        <TableCell className="font-medium">
-                          {studentName(f.student_id)}
-                        </TableCell>
-                        <TableCell>₹{f.total_amount.toFixed(2)}</TableCell>
-                        <TableCell>₹{f.paid_amount.toFixed(2)}</TableCell>
-                        <TableCell>
-                          ₹{(f.total_amount - f.paid_amount).toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(f.due_date), "PPP")}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {f.reset_interval}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={status.variant}>{status.label}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            title="Reset cycle"
-                            onClick={() => resetCycle(f)}
-                            disabled={f.reset_interval === "none"}
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openEdit(f)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setDeleteId(f.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <>
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {fees.map((f) => {
+                  const status = statusOf(f);
+                  const pending = f.total_amount - f.paid_amount;
+                  return (
+                    <div key={f.id} className="rounded-2xl border bg-card p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{studentName(f.student_id)}</p>
+                          <p className="text-xs text-muted-foreground">Due {format(new Date(f.due_date), "PPP")}</p>
+                        </div>
+                        <Badge variant={status.variant}>{status.label}</Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                        <div className="rounded-lg bg-muted/50 p-2">
+                          <p className="text-[10px] text-muted-foreground uppercase">Total</p>
+                          <p className="font-semibold text-sm">₹{f.total_amount.toFixed(0)}</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/50 p-2">
+                          <p className="text-[10px] text-muted-foreground uppercase">Paid</p>
+                          <p className="font-semibold text-sm text-green-600 dark:text-green-500">₹{f.paid_amount.toFixed(0)}</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/50 p-2">
+                          <p className="text-[10px] text-muted-foreground uppercase">Due</p>
+                          <p className="font-semibold text-sm text-destructive">₹{pending.toFixed(0)}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" className="flex-1 h-10 rounded-xl" onClick={() => openEdit(f)}>
+                          <Pencil className="h-4 w-4 mr-1" /> Edit
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-10 w-10 rounded-xl" onClick={() => resetCycle(f)} disabled={f.reset_interval === "none"}>
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-10 w-10 rounded-xl" onClick={() => setDeleteId(f.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Paid</TableHead>
+                      <TableHead>Pending</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Cycle</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fees.map((f) => {
+                      const status = statusOf(f);
+                      return (
+                        <TableRow key={f.id}>
+                          <TableCell className="font-medium">
+                            {studentName(f.student_id)}
+                          </TableCell>
+                          <TableCell>₹{f.total_amount.toFixed(2)}</TableCell>
+                          <TableCell>₹{f.paid_amount.toFixed(2)}</TableCell>
+                          <TableCell>
+                            ₹{(f.total_amount - f.paid_amount).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(f.due_date), "PPP")}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {f.reset_interval}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={status.variant}>{status.label}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              title="Reset cycle"
+                              onClick={() => resetCycle(f)}
+                              disabled={f.reset_interval === "none"}
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => openEdit(f)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setDeleteId(f.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
