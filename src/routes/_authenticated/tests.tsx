@@ -374,21 +374,24 @@ function TestsPage() {
               No upcoming tests scheduled.
             </p>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Test Name</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Batch</TableHead>
-                    <TableHead>Date</TableHead>
-                    {isAdmin && <TableHead className="text-right">Actions</TableHead>}
-                    {!isAdmin && <TableHead>My Marks</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>{upcoming.map(renderRow)}</TableBody>
-              </Table>
-            </div>
+            <>
+              <div className="md:hidden space-y-3">{upcoming.map(renderCard)}</div>
+              <div className="hidden md:block rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Test Name</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Batch</TableHead>
+                      <TableHead>Date</TableHead>
+                      {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                      {!isAdmin && <TableHead>My Marks</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>{upcoming.map(renderRow)}</TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
