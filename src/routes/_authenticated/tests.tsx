@@ -306,6 +306,39 @@ function TestsPage() {
     </TableRow>
   );
 
+  const renderCard = (t: Test) => (
+    <div key={t.id} className="rounded-2xl border bg-card p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0">
+          <p className="font-semibold truncate">{t.test_name}</p>
+          <p className="text-xs text-muted-foreground">{t.subject} · {format(new Date(t.test_date), "PPP")}</p>
+        </div>
+        <Badge variant="secondary" className="shrink-0">{t.batch}</Badge>
+      </div>
+      {!isAdmin && (
+        <div className="rounded-lg bg-muted/50 p-2 text-center mb-2">
+          <p className="text-[10px] text-muted-foreground uppercase">My Marks</p>
+          <p className="font-semibold">
+            {myMarks[t.id] ? `${myMarks[t.id].marks} / ${myMarks[t.id].max_marks}` : "—"}
+          </p>
+        </div>
+      )}
+      {isAdmin && (
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="flex-1 h-10 rounded-xl" onClick={() => openMarks(t)}>
+            <ClipboardList className="h-4 w-4 mr-1" /> Marks
+          </Button>
+          <Button size="sm" variant="outline" className="h-10 w-10 rounded-xl" onClick={() => openEdit(t)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" className="h-10 w-10 rounded-xl" onClick={() => setDeleteId(t.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
