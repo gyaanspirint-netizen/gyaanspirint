@@ -127,6 +127,47 @@ function StudentsPage() {
     cuid: string;
     phone: string;
   } | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [pending, setPending] = useState<any[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [viewPending, setViewPending] = useState<any | null>(null);
+  const listPendingFn = useServerFn(listPendingRegistrations);
+  const approvePendingFn = useServerFn(approvePendingRegistration);
+  const rejectPendingFn = useServerFn(rejectPendingRegistration);
+
+  const fetchPending = async () => {
+    setPendingLoading(true);
+    try {
+      const rows = await listPendingFn();
+      setPending(rows as any[]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setPendingLoading(false);
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    try {
+      const res = await approvePendingFn({ data: { id } });
+      toast.success(`Approved — CUID ${res.cuid}`);
+      setCredentialsDialog({ cuid: res.cuid, phone: res.password });
+      fetchPending();
+      fetchStudents();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      await rejectPendingFn({ data: { id } });
+      toast.success("Registration rejected");
+      fetchPending();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  };
 
   const fetchStudents = async () => {
     setLoading(true);
