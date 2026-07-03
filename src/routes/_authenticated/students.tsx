@@ -469,16 +469,190 @@ function StudentsPage() {
           )}
         </CardContent>
       </Card>
+      </TabsContent>
 
-      {/* Mobile floating action button */}
-      <button
-        type="button"
-        aria-label="Add student"
-        onClick={openAdd}
-        className="sm:hidden fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
+      <TabsContent value="pending" className="mt-0">
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Registrations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pendingLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading...
+              </div>
+            ) : pending.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground text-sm">
+                No pending registrations. Share your invite link to receive sign-ups.
+              </div>
+            ) : (
+              <>
+                {/* Mobile cards */}
+                <div className="md:hidden space-y-3">
+                  {pending.map((p) => (
+                    <div key={p.id} className="rounded-xl border bg-card p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{p.student_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            Parent: {p.parent_name} · {p.parent_phone}
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="shrink-0 text-[10px]">
+                          {new Date(p.submitted_at).toLocaleDateString()}
+                        </Badge>
+                      </div>
+                      {p.batch && (
+                        <p className="mt-2 text-xs">
+                          <span className="text-muted-foreground">Class: </span>
+                          <span className="font-medium">{p.batch}</span>
+                        </p>
+                      )}
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        <Button
+                          size="sm"
+                          className="h-10"
+                          onClick={() => handleApprove(p.id)}
+                        >
+                          <Check className="h-4 w-4 mr-1" /> Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-10"
+                          onClick={() => handleReject(p.id)}
+                        >
+                          <X className="h-4 w-4 mr-1" /> Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-10"
+                          onClick={() => setViewPending(p)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student Name</TableHead>
+                        <TableHead>Parent Name</TableHead>
+                        <TableHead>Parent Phone</TableHead>
+                        <TableHead>Class</TableHead>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pending.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">{p.student_name}</TableCell>
+                          <TableCell>{p.parent_name}</TableCell>
+                          <TableCell>{p.parent_phone}</TableCell>
+                          <TableCell>{p.batch || "—"}</TableCell>
+                          <TableCell>
+                            {new Date(p.submitted_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApprove(p.id)}
+                              >
+                                <Check className="h-4 w-4 mr-1" /> Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleReject(p.id)}
+                              >
+                                <X className="h-4 w-4 mr-1" /> Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setViewPending(p)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+      </Tabs>
+
+      {/* Mobile floating action buttons */}
+      <div className="sm:hidden fixed bottom-20 right-4 z-30 flex flex-col gap-3">
+        <button
+          type="button"
+          aria-label="Invite students"
+          onClick={() => setInviteOpen(true)}
+          className="h-12 w-12 rounded-full bg-card border shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Share2 className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          aria-label="Add student"
+          onClick={openAdd}
+          className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      </div>
+
+      <InviteStudentsDialog open={inviteOpen} onOpenChange={setInviteOpen} />
+
+      <Dialog open={!!viewPending} onOpenChange={(o) => !o && setViewPending(null)}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Registration Details</DialogTitle>
+          </DialogHeader>
+          {viewPending && (
+            <div className="space-y-2 text-sm">
+              <DetailRow label="Student" value={viewPending.student_name} />
+              <DetailRow label="Parent" value={viewPending.parent_name} />
+              <DetailRow label="Parent Phone" value={viewPending.parent_phone} />
+              <DetailRow label="Student Phone" value={viewPending.student_phone || "—"} />
+              <DetailRow label="Class / Batch" value={viewPending.batch || "—"} />
+              <DetailRow label="Notes" value={viewPending.notes || "—"} />
+              <DetailRow
+                label="Submitted"
+                value={new Date(viewPending.submitted_at).toLocaleString()}
+              />
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setViewPending(null)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                handleApprove(viewPending.id);
+                setViewPending(null);
+              }}
+            >
+              <Check className="h-4 w-4 mr-1" /> Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
