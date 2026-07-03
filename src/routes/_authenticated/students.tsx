@@ -192,6 +192,7 @@ function StudentsPage() {
     if (role === "admin") {
       fetchStudents();
       fetchBatches();
+      fetchPending();
     }
   }, [role]);
 
