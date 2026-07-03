@@ -803,6 +803,15 @@ function StudentsPage() {
   );
 }
 
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4 border-b py-2 last:border-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-right">{value}</span>
+    </div>
+  );
+}
+
 function CredentialRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between rounded-md border p-3">
