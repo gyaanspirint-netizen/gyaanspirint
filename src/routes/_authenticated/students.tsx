@@ -302,10 +302,30 @@ function StudentsPage() {
             Manage all enrolled students.
           </p>
         </div>
-        <Button onClick={openAdd} className="hidden sm:inline-flex">
-          <Plus className="h-4 w-4 mr-2" /> Add Student
-        </Button>
+        <div className="hidden sm:flex items-center gap-2">
+          <Button variant="outline" onClick={() => setInviteOpen(true)}>
+            <Share2 className="h-4 w-4 mr-2" /> Invite Students
+          </Button>
+          <Button onClick={openAdd}>
+            <Plus className="h-4 w-4 mr-2" /> Add Student
+          </Button>
+        </div>
       </div>
+
+      <Tabs defaultValue="all" className="space-y-4">
+        <TabsList className="grid w-full sm:w-auto sm:inline-grid grid-cols-2">
+          <TabsTrigger value="all">All Students</TabsTrigger>
+          <TabsTrigger value="pending" className="gap-2">
+            Pending
+            {pending.length > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                {pending.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-0">
 
       <Card>
         <CardHeader className="gap-3">
