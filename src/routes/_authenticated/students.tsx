@@ -5,6 +5,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { createStudent, deleteStudent } from "@/lib/students.functions";
+import {
+  listPendingRegistrations,
+  approvePendingRegistration,
+  rejectPendingRegistration,
+} from "@/lib/registration.functions";
+import { InviteStudentsDialog } from "@/components/invite-students-dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,7 +50,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Loader2, Copy } from "lucide-react";
+import {
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Loader2,
+  Copy,
+  Share2,
+  Check,
+  X,
+  Eye,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students")({
   head: () => ({ meta: [{ title: "Students — Gyanspirint" }] }),
