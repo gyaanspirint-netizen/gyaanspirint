@@ -248,6 +248,8 @@ export type Database = {
           activation_code_generated_at: string | null
           approved_at: string | null
           approved_by: string | null
+          auto_generate_id: boolean
+          auto_generate_password: boolean
           city: string
           created_at: string
           email: string
@@ -256,7 +258,10 @@ export type Database = {
           name: string
           owner_id: string | null
           owner_name: string
+          registration_enabled: boolean
+          registration_token: string | null
           rejection_reason: string | null
+          require_approval: boolean
           status: string
           updated_at: string
         }
@@ -266,6 +271,8 @@ export type Database = {
           activation_code_generated_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_generate_id?: boolean
+          auto_generate_password?: boolean
           city: string
           created_at?: string
           email: string
@@ -274,7 +281,10 @@ export type Database = {
           name: string
           owner_id?: string | null
           owner_name: string
+          registration_enabled?: boolean
+          registration_token?: string | null
           rejection_reason?: string | null
+          require_approval?: boolean
           status?: string
           updated_at?: string
         }
@@ -284,6 +294,8 @@ export type Database = {
           activation_code_generated_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_generate_id?: boolean
+          auto_generate_password?: boolean
           city?: string
           created_at?: string
           email?: string
@@ -292,8 +304,59 @@ export type Database = {
           name?: string
           owner_id?: string | null
           owner_name?: string
+          registration_enabled?: boolean
+          registration_token?: string | null
           rejection_reason?: string | null
+          require_approval?: boolean
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pending_registrations: {
+        Row: {
+          batch: string
+          created_at: string
+          id: string
+          notes: string
+          owner_id: string
+          parent_name: string
+          parent_phone: string
+          processed_at: string | null
+          status: string
+          student_name: string
+          student_phone: string
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          batch?: string
+          created_at?: string
+          id?: string
+          notes?: string
+          owner_id: string
+          parent_name: string
+          parent_phone: string
+          processed_at?: string | null
+          status?: string
+          student_name: string
+          student_phone?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          batch?: string
+          created_at?: string
+          id?: string
+          notes?: string
+          owner_id?: string
+          parent_name?: string
+          parent_phone?: string
+          processed_at?: string | null
+          status?: string
+          student_name?: string
+          student_phone?: string
+          submitted_at?: string
           updated_at?: string
         }
         Relationships: []
