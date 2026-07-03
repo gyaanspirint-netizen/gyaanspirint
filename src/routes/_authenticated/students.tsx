@@ -5,6 +5,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { createStudent, deleteStudent } from "@/lib/students.functions";
+import {
+  listPendingRegistrations,
+  approvePendingRegistration,
+  rejectPendingRegistration,
+} from "@/lib/registration.functions";
+import { InviteStudentsDialog } from "@/components/invite-students-dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,7 +50,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Loader2, Copy } from "lucide-react";
+import {
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Loader2,
+  Copy,
+  Share2,
+  Check,
+  X,
+  Eye,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students")({
   head: () => ({ meta: [{ title: "Students — Gyanspirint" }] }),
@@ -109,6 +127,47 @@ function StudentsPage() {
     cuid: string;
     phone: string;
   } | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [pending, setPending] = useState<any[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [viewPending, setViewPending] = useState<any | null>(null);
+  const listPendingFn = useServerFn(listPendingRegistrations);
+  const approvePendingFn = useServerFn(approvePendingRegistration);
+  const rejectPendingFn = useServerFn(rejectPendingRegistration);
+
+  const fetchPending = async () => {
+    setPendingLoading(true);
+    try {
+      const rows = await listPendingFn();
+      setPending(rows as any[]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setPendingLoading(false);
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    try {
+      const res = await approvePendingFn({ data: { id } });
+      toast.success(`Approved — CUID ${res.cuid}`);
+      setCredentialsDialog({ cuid: res.cuid, phone: res.password });
+      fetchPending();
+      fetchStudents();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      await rejectPendingFn({ data: { id } });
+      toast.success("Registration rejected");
+      fetchPending();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  };
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -133,6 +192,7 @@ function StudentsPage() {
     if (role === "admin") {
       fetchStudents();
       fetchBatches();
+      fetchPending();
     }
   }, [role]);
 
@@ -242,10 +302,30 @@ function StudentsPage() {
             Manage all enrolled students.
           </p>
         </div>
-        <Button onClick={openAdd} className="hidden sm:inline-flex">
-          <Plus className="h-4 w-4 mr-2" /> Add Student
-        </Button>
+        <div className="hidden sm:flex items-center gap-2">
+          <Button variant="outline" onClick={() => setInviteOpen(true)}>
+            <Share2 className="h-4 w-4 mr-2" /> Invite Students
+          </Button>
+          <Button onClick={openAdd}>
+            <Plus className="h-4 w-4 mr-2" /> Add Student
+          </Button>
+        </div>
       </div>
+
+      <Tabs defaultValue="all" className="space-y-4">
+        <TabsList className="grid w-full sm:w-auto sm:inline-grid grid-cols-2">
+          <TabsTrigger value="all">All Students</TabsTrigger>
+          <TabsTrigger value="pending" className="gap-2">
+            Pending
+            {pending.length > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                {pending.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-0">
 
       <Card>
         <CardHeader className="gap-3">
@@ -389,16 +469,190 @@ function StudentsPage() {
           )}
         </CardContent>
       </Card>
+      </TabsContent>
 
-      {/* Mobile floating action button */}
-      <button
-        type="button"
-        aria-label="Add student"
-        onClick={openAdd}
-        className="sm:hidden fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
+      <TabsContent value="pending" className="mt-0">
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Registrations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pendingLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading...
+              </div>
+            ) : pending.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground text-sm">
+                No pending registrations. Share your invite link to receive sign-ups.
+              </div>
+            ) : (
+              <>
+                {/* Mobile cards */}
+                <div className="md:hidden space-y-3">
+                  {pending.map((p) => (
+                    <div key={p.id} className="rounded-xl border bg-card p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{p.student_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            Parent: {p.parent_name} · {p.parent_phone}
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="shrink-0 text-[10px]">
+                          {new Date(p.submitted_at).toLocaleDateString()}
+                        </Badge>
+                      </div>
+                      {p.batch && (
+                        <p className="mt-2 text-xs">
+                          <span className="text-muted-foreground">Class: </span>
+                          <span className="font-medium">{p.batch}</span>
+                        </p>
+                      )}
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        <Button
+                          size="sm"
+                          className="h-10"
+                          onClick={() => handleApprove(p.id)}
+                        >
+                          <Check className="h-4 w-4 mr-1" /> Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-10"
+                          onClick={() => handleReject(p.id)}
+                        >
+                          <X className="h-4 w-4 mr-1" /> Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-10"
+                          onClick={() => setViewPending(p)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student Name</TableHead>
+                        <TableHead>Parent Name</TableHead>
+                        <TableHead>Parent Phone</TableHead>
+                        <TableHead>Class</TableHead>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pending.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">{p.student_name}</TableCell>
+                          <TableCell>{p.parent_name}</TableCell>
+                          <TableCell>{p.parent_phone}</TableCell>
+                          <TableCell>{p.batch || "—"}</TableCell>
+                          <TableCell>
+                            {new Date(p.submitted_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApprove(p.id)}
+                              >
+                                <Check className="h-4 w-4 mr-1" /> Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleReject(p.id)}
+                              >
+                                <X className="h-4 w-4 mr-1" /> Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setViewPending(p)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+      </Tabs>
+
+      {/* Mobile floating action buttons */}
+      <div className="sm:hidden fixed bottom-20 right-4 z-30 flex flex-col gap-3">
+        <button
+          type="button"
+          aria-label="Invite students"
+          onClick={() => setInviteOpen(true)}
+          className="h-12 w-12 rounded-full bg-card border shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Share2 className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          aria-label="Add student"
+          onClick={openAdd}
+          className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      </div>
+
+      <InviteStudentsDialog open={inviteOpen} onOpenChange={setInviteOpen} />
+
+      <Dialog open={!!viewPending} onOpenChange={(o) => !o && setViewPending(null)}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Registration Details</DialogTitle>
+          </DialogHeader>
+          {viewPending && (
+            <div className="space-y-2 text-sm">
+              <DetailRow label="Student" value={viewPending.student_name} />
+              <DetailRow label="Parent" value={viewPending.parent_name} />
+              <DetailRow label="Parent Phone" value={viewPending.parent_phone} />
+              <DetailRow label="Student Phone" value={viewPending.student_phone || "—"} />
+              <DetailRow label="Class / Batch" value={viewPending.batch || "—"} />
+              <DetailRow label="Notes" value={viewPending.notes || "—"} />
+              <DetailRow
+                label="Submitted"
+                value={new Date(viewPending.submitted_at).toLocaleString()}
+              />
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setViewPending(null)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                handleApprove(viewPending.id);
+                setViewPending(null);
+              }}
+            >
+              <Check className="h-4 w-4 mr-1" /> Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -545,6 +799,15 @@ function StudentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4 border-b py-2 last:border-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-right">{value}</span>
     </div>
   );
 }
