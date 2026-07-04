@@ -189,8 +189,8 @@ function TeacherView({ userId }: { userId: string }) {
       supabase.from("batches").select("name").order("name"),
       supabase.from("class_update_completions").select("update_id, student_id, status"),
     ]);
-    setUpdates((uRes.data ?? []) as ClassUpdate[]);
-    setTemplates((tRes.data ?? []) as Template[]);
+    setUpdates((uRes.data ?? []) as unknown as ClassUpdate[]);
+    setTemplates((tRes.data ?? []) as unknown as Template[]);
     setStudents((sRes.data ?? []) as Student[]);
     setBatches(((bRes.data ?? []) as { name: string }[]).map((b) => b.name));
     setCompletions((cRes.data ?? []) as Completion[]);
@@ -1293,7 +1293,7 @@ function StudentView({ userId }: { userId: string }) {
       supabase.from("class_updates").select("*").order("published_at", { ascending: false }),
       supabase.from("class_update_reads").select("update_id").eq("student_user_id", userId),
     ]);
-    setUpdates((uRes.data ?? []) as ClassUpdate[]);
+    setUpdates((uRes.data ?? []) as unknown as ClassUpdate[]);
     setReads(new Set(((rRes.data ?? []) as { update_id: string }[]).map((r) => r.update_id)));
     setLoading(false);
   };
