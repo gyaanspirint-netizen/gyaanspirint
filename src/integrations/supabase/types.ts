@@ -150,6 +150,182 @@ export type Database = {
         }
         Relationships: []
       }
+      class_update_completions: {
+        Row: {
+          created_at: string
+          id: string
+          marked_at: string
+          owner_id: string
+          status: Database["public"]["Enums"]["completion_status"]
+          student_id: string
+          update_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marked_at?: string
+          owner_id: string
+          status: Database["public"]["Enums"]["completion_status"]
+          student_id: string
+          update_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marked_at?: string
+          owner_id?: string
+          status?: Database["public"]["Enums"]["completion_status"]
+          student_id?: string
+          update_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_update_completions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_update_completions_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "class_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_update_reads: {
+        Row: {
+          read_at: string
+          student_user_id: string
+          update_id: string
+        }
+        Insert: {
+          read_at?: string
+          student_user_id: string
+          update_id: string
+        }
+        Update: {
+          read_at?: string
+          student_user_id?: string
+          update_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_update_reads_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "class_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_update_templates: {
+        Row: {
+          attachments: Json
+          created_at: string
+          homework: string | null
+          id: string
+          name: string
+          notice: string | null
+          owner_id: string
+          priority: Database["public"]["Enums"]["update_priority"]
+          subject: string | null
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          created_at?: string
+          homework?: string | null
+          id?: string
+          name: string
+          notice?: string | null
+          owner_id: string
+          priority?: Database["public"]["Enums"]["update_priority"]
+          subject?: string | null
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          created_at?: string
+          homework?: string | null
+          id?: string
+          name?: string
+          notice?: string | null
+          owner_id?: string
+          priority?: Database["public"]["Enums"]["update_priority"]
+          subject?: string | null
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      class_updates: {
+        Row: {
+          attachments: Json
+          audience_ids: string[]
+          audience_type: Database["public"]["Enums"]["update_audience"]
+          batch: string
+          class_name: string
+          created_at: string
+          created_by: string
+          due_date: string | null
+          homework: string
+          id: string
+          notice: string | null
+          owner_id: string
+          priority: Database["public"]["Enums"]["update_priority"]
+          published_at: string
+          subject: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          audience_ids?: string[]
+          audience_type?: Database["public"]["Enums"]["update_audience"]
+          batch?: string
+          class_name?: string
+          created_at?: string
+          created_by?: string
+          due_date?: string | null
+          homework?: string
+          id?: string
+          notice?: string | null
+          owner_id: string
+          priority?: Database["public"]["Enums"]["update_priority"]
+          published_at?: string
+          subject: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          audience_ids?: string[]
+          audience_type?: Database["public"]["Enums"]["update_audience"]
+          batch?: string
+          class_name?: string
+          created_at?: string
+          created_by?: string
+          due_date?: string | null
+          homework?: string
+          id?: string
+          notice?: string | null
+          owner_id?: string
+          priority?: Database["public"]["Enums"]["update_priority"]
+          published_at?: string
+          subject?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fees: {
         Row: {
           created_at: string
@@ -646,6 +822,9 @@ export type Database = {
     Enums: {
       app_role: "admin" | "student" | "super_admin"
       attendance_status: "present" | "absent"
+      completion_status: "completed" | "partial" | "not_completed"
+      update_audience: "class" | "batch" | "students"
+      update_priority: "normal" | "important" | "urgent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -775,6 +954,9 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "student", "super_admin"],
       attendance_status: ["present", "absent"],
+      completion_status: ["completed", "partial", "not_completed"],
+      update_audience: ["class", "batch", "students"],
+      update_priority: ["normal", "important", "urgent"],
     },
   },
 } as const

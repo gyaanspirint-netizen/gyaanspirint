@@ -15,7 +15,7 @@ const studentTabs = [
   { title: "Home", url: "/student", icon: LayoutDashboard },
   { title: "Batches", url: "/my-batches", icon: CalendarClock },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
-  { title: "Homework", url: "/homework", icon: NotebookPen },
+  { title: "Updates", url: "/homework", icon: NotebookPen },
   { title: "Tests", url: "/tests", icon: FileText },
 ] as const;
 

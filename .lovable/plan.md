@@ -1,72 +1,66 @@
-# Coaching Hub Enhancements
+# Today's Class Update — Plan
 
-## 1. Database changes (single migration)
+This turns the current Homework module into a richer "Today's Class Update" system without touching unrelated pages. Desktop keeps its layout; mobile gets a fully card-based responsive experience with a floating create button.
 
-**`batches` table — new columns:**
-- `course_name` (text)
-- `start_date` (date)
-- `end_date` (date)
-- `start_time` (time)
-- `end_time` (time)
-- `schedule_type` (text: `daily` | `alternate` | `custom`)
-- `schedule_days` (text[] — only used when `schedule_type='custom'`, e.g. `{Mon,Wed,Fri}`)
-- `status` (text: `active` | `completed`, default `active`)
+## 1. Rename & Navigation
+- Rename sidebar entry, page header, and route metadata from "Homework" to "Today's Class Update".
+- Keep the URL `/homework` to avoid breaking bookmarks and existing links (internal path only; UI label changes).
+- Update mobile bottom nav label + icon tooltip.
 
-**New table `batch_teachers`** (many-to-many between batches and teacher profiles):
-- `batch_id` → batches
-- `teacher_name` (text), `subject` (text), `email` (text)
-- `owner_id` (auth.users)
-- Standard timestamps, RLS scoped to owner; students can `SELECT` rows for batches they belong to.
+## 2. Database (single migration)
+Extend `homework` and add supporting tables:
+- `homework`: add `subject`, `class_name`, `batch`, `topic`, `notice`, `due_date`, `priority` (enum normal/important/urgent), `attachments` (jsonb array of {name,url,type,size}), `audience_type` (class/batch/students), `audience_ids` (uuid[]), `completion_status` per row via new table below, `published_at`.
+- New `homework_completion(homework_id, student_id, status: completed|partial|not_completed, marked_at)`.
+- New `homework_templates(id, owner_id, name, subject, topic, homework, notice, priority, attachments)`.
+- New `homework_reads(homework_id, student_id, read_at)` for "new until opened" badges.
+- Storage bucket `homework-attachments` (private) with RLS: owners upload; students in audience can read.
+- All tables get GRANTs + RLS scoped to `owner_id` (teacher) and audience membership (student).
 
-**New table `support_tickets`:**
-- `subject`, `message`, `status` (`open` | `in_progress` | `resolved`)
-- `created_by` (auth.users), `owner_id` (admin who owns the tenant)
-- Student creates own ticket; admin sees all tickets in their tenant.
+## 3. Create/Edit Update Dialog
+- Redesigned dialog with sections: **Basics** (Subject, Class, Batch), **Content** (Topic*, Homework*, Notice, Due Date), **Priority** (segmented control with colored badge preview), **Attachments** (drag/drop upload PDF/images/docs, list with remove), **Audience** (Entire Class / Specific Batch / Selected Students tabs).
+- Actions: `Save as Template`, `Copy Previous Update` (opens picker of past updates → prefills), `Publish`.
+- Priority badge colors reuse existing tokens: normal=secondary, important=warning-ish (amber), urgent=destructive.
 
-All new tables get GRANTs + RLS + `current_owner_id()` policies consistent with the existing multi-tenant setup.
+## 4. Templates
+- New tab "Templates" in the page. List cards with Use / Edit / Delete.
+- "Save as template" from create dialog captures current fields.
 
-## 2. Admin — Batches page (`src/routes/_authenticated/batches.tsx`)
+## 5. History & Search (Teacher view)
+- Tabs: **Updates** (default), **Templates**, **Reports**.
+- Search bar + filters (Subject, Batch, Class, Date range). Sorted newest first.
+- Each update card shows priority badge, subject, topic snippet, due date, audience summary, attachment count, completion stats.
+- Expanding shows full content + per-student completion marking (Completed / Partial / Not completed).
 
-Extend the existing add/edit dialog:
-- Course name, start/end date, start/end time (validated: end > start), status select.
-- Schedule type dropdown (Daily / Alternate / Custom). When Custom, show 7 day checkboxes.
-- "Teachers" section inside the dialog: list current teachers (name + subject + email) with add/remove buttons. Backed by `batch_teachers`.
-- Batch list shows: name, code, course, timing, schedule pattern, teacher count, status badge.
+## 6. Completion Tracking & Reports
+- After due date, teacher marks each student's status inline. Header shows counts + completion rate.
+- Reports tab: overall %, top missers list, class-wise / batch-wise / monthly bar summaries (simple aggregated cards using existing shadcn primitives — no new chart lib needed beyond existing recharts).
 
-## 3. Student dashboard (`src/routes/_authenticated/student.tsx`)
+## 7. Student Dashboard
+- Student role view: card feed of published updates targeted to them, newest first.
+- Filters: Subject, Class, Batch, Date. Search box.
+- Card shows subject, topic, homework, notice, due date, priority badge, published date, attachment list (view/download/preview images inline via dialog).
+- Unread badge dot until student opens the card → writes `homework_reads` row. Nav shows count of unread.
 
-Add a "My Batches" section that for each batch the student belongs to shows:
-- Batch name, code, course, start/end date, status badge, timings, schedule pattern (Daily / Alternate / `Mon, Wed, Fri`), assigned teachers list (name + subject + email).
-- Stat cards: Total Classes (count of past+future schedule entries for their batches), Upcoming Classes (future schedule entries), Assigned Teachers (distinct count), Attendance % (already computed — keep existing logic).
+## 8. Mobile UX
+- Full-width rounded-2xl cards; no tables anywhere on mobile.
+- Sticky FAB "＋ Create Update" (teacher) above bottom nav.
+- Filter drawer instead of inline filter bar.
+- 44px min touch targets, generous spacing.
 
-Read-only — no edit controls.
+## 9. Desktop UX
+- Keep existing two-column feel; add filter row above the table/card grid.
+- Table stays for update list on desktop with expandable rows for completion; other tabs use card grids.
 
-## 4. Help Desk
+## Technical notes
+- Files to add: `src/lib/class-updates.functions.ts`, `src/components/create-update-dialog.tsx`, `src/components/update-card.tsx`, `src/components/attachment-uploader.tsx`, `src/components/completion-tracker.tsx`, `src/components/homework-reports.tsx`.
+- File to overhaul: `src/routes/_authenticated/homework.tsx` (split teacher vs student view via role).
+- One Supabase migration for schema + storage bucket + policies.
+- Uploads via signed URLs from `homework-attachments` bucket; server function issues upload URLs; download via signed URL for private files.
+- Reuse existing design tokens; no new colors beyond mapping priority → existing semantic tokens.
 
-**Sidebar** — new "Help Desk" entry for both admin and student.
+## Out of scope
+- Push/email notifications (only in-app unread badge).
+- Rich text editor (plain textarea kept for speed; can add later).
+- Bulk CSV export of reports.
 
-**`/help-desk` route (shared):**
-- Static contact card: "Need Help? Email gyaansprint@gmail.com" with mailto link.
-- Below it, a "Submit a ticket" form (subject + message) → inserts into `support_tickets`.
-- Student sees their own previous tickets with status.
-- Admin sees an "Admin Support Dashboard" panel on the same page (or a separate `/support` admin-only): stats (Total / Open / In Progress / Resolved), search box, status filter, table of all tickets, row actions (change status, delete, view details dialog).
-
-## 5. Out of scope
-
-- No teacher login/role (teachers are stored as text records on a batch — no auth account).
-- No automatic class-instance generation from schedule pattern; "Total Classes" derives from existing `schedule` rows.
-- No email sending from the ticket form (the contact email is the documented channel; tickets are stored for admin to triage).
-
-## Files
-
-**Migration:** new `supabase/migrations/<ts>_batch_meta_teachers_support.sql`
-
-**Edited:**
-- `src/components/app-sidebar.tsx` (Help Desk item)
-- `src/routes/_authenticated/batches.tsx` (new fields + teacher management)
-- `src/routes/_authenticated/student.tsx` (batch info section + cards)
-- `src/routes/_authenticated/schedule.tsx` (optional: surface schedule pattern label)
-- `src/integrations/supabase/types.ts` (regenerated)
-
-**Created:**
-- `src/routes/_authenticated/help-desk.tsx` (shared page; admin sees ticket manager, student sees contact + own tickets)
+Proceeding after approval — this is a multi-file change (~8 files + 1 migration).

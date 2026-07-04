@@ -35,7 +35,7 @@ const adminItems = [
   { title: "Institute Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Students", url: "/students", icon: Users },
   { title: "Batches", url: "/batches", icon: CalendarClock },
-  { title: "Homework", url: "/homework", icon: NotebookPen },
+  { title: "Class Updates", url: "/homework", icon: NotebookPen },
   { title: "Schedule", url: "/schedule", icon: Calendar },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
   { title: "Tests", url: "/tests", icon: FileText },
@@ -46,7 +46,7 @@ const adminItems = [
 const studentItems = [
   { title: "Dashboard", url: "/student", icon: LayoutDashboard },
   { title: "My Batches", url: "/my-batches", icon: CalendarClock },
-  { title: "Homework", url: "/homework", icon: NotebookPen },
+  { title: "Class Updates", url: "/homework", icon: NotebookPen },
   { title: "Schedule", url: "/schedule", icon: Calendar },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
   { title: "Tests", url: "/tests", icon: FileText },
