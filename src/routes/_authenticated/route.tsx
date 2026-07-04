@@ -1,10 +1,14 @@
-import { createFileRoute, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import logoAsset from "@/assets/gyanspirint-logo.png.asset.json";
+
+// Cache the role/institute check across route navigations so we don't
+// re-query the backend every time the user clicks a link.
+let authCheckCache: { userId: string; ok: boolean } | null = null;
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -18,16 +22,23 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthedLayout() {
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (r) => r.location.pathname });
-  const [checked, setChecked] = useState(false);
+  const [checked, setChecked] = useState(() => authCheckCache?.ok ?? false);
+  const ranRef = useRef(false);
 
   useEffect(() => {
+    if (ranRef.current) return;
+    ranRef.current = true;
+
+    if (authCheckCache?.ok) {
+      setChecked(true);
+      return;
+    }
+
     let cancelled = false;
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user || cancelled) return;
 
-      // Check roles
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -36,15 +47,14 @@ function AuthedLayout() {
       const isSuperAdmin = roleList.includes("super_admin");
 
       if (isSuperAdmin) {
-        if (pathname !== "/super-admin" && pathname !== "/settings") {
+        authCheckCache = { userId: u.user.id, ok: true };
+        if (!cancelled) {
           navigate({ to: "/super-admin", replace: true });
-          return;
+          setChecked(true);
         }
-        if (!cancelled) setChecked(true);
         return;
       }
 
-      // Check institute status for admins. Skip for students (no institute row).
       const isAdmin = roleList.includes("admin");
       if (isAdmin) {
         const { data: inst } = await supabase
@@ -53,16 +63,28 @@ function AuthedLayout() {
           .eq("owner_id", u.user.id)
           .maybeSingle();
         if (inst && inst.status !== "active") {
-          navigate({ to: "/pending-approval", replace: true });
+          authCheckCache = { userId: u.user.id, ok: true };
+          if (!cancelled) {
+            navigate({ to: "/pending-approval", replace: true });
+            setChecked(true);
+          }
           return;
         }
       }
+      authCheckCache = { userId: u.user.id, ok: true };
       if (!cancelled) setChecked(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [navigate, pathname]);
+  }, [navigate]);
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") authCheckCache = null;
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   return (
     <SidebarProvider>
