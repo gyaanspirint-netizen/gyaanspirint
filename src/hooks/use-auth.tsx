@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "student" | "super_admin";
+export type AppRole = "admin" | "student" | "super_admin" | "teacher";
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
@@ -31,16 +31,18 @@ export function useAuth() {
     let cancelled = false;
     const metaRole = (user.user_metadata?.role as AppRole | undefined) ?? null;
     const fetchRole = async (attempt = 0): Promise<void> => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
+      const [rolesRes, teacherRes] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", user.id),
+        supabase.from("teachers").select("id, status").eq("user_id", user.id).maybeSingle(),
+      ]);
       if (cancelled) return;
-      const roles = (data ?? []).map((r) => r.role as AppRole);
-      // Priority: super_admin > admin > student
+      const roles = (rolesRes.data ?? []).map((r) => r.role as AppRole);
+      const isTeacher = teacherRes.data && teacherRes.data.status === "active";
+      // Priority: super_admin > admin > teacher > student
       const resolved =
         roles.find((r) => r === "super_admin") ??
         roles.find((r) => r === "admin") ??
+        (isTeacher ? ("teacher" as AppRole) : undefined) ??
         roles.find((r) => r === "student");
       if (resolved) {
         setRole(resolved);

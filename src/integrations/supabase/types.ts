@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          actor_name: string | null
+          actor_role: string | null
+          actor_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json
+          owner_id: string
+        }
+        Insert: {
+          action: string
+          actor_name?: string | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json
+          owner_id: string
+        }
+        Update: {
+          action?: string
+          actor_name?: string | null
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          audience_ids: string[]
+          audience_labels: string[]
+          audience_type: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          owner_id: string
+          teacher_id: string | null
+          title: string
+        }
+        Insert: {
+          audience_ids?: string[]
+          audience_labels?: string[]
+          audience_type?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_id: string
+          teacher_id?: string | null
+          title: string
+        }
+        Update: {
+          audience_ids?: string[]
+          audience_labels?: string[]
+          audience_type?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_id?: string
+          teacher_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           batch: string
@@ -695,6 +781,156 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_assignments: {
+        Row: {
+          batch_id: string
+          class_name: string | null
+          created_at: string
+          id: string
+          owner_id: string
+          subject: string | null
+          teacher_id: string
+        }
+        Insert: {
+          batch_id: string
+          class_name?: string | null
+          created_at?: string
+          id?: string
+          owner_id: string
+          subject?: string | null
+          teacher_id: string
+        }
+        Update: {
+          batch_id?: string
+          class_name?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string
+          subject?: string | null
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_assignments_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_remarks: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          remark: string
+          student_id: string
+          tag: string | null
+          teacher_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id: string
+          remark: string
+          student_id: string
+          tag?: string | null
+          teacher_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          remark?: string
+          student_id?: string
+          tag?: string | null
+          teacher_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_remarks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_remarks_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teachers: {
+        Row: {
+          created_at: string
+          email: string | null
+          experience: string | null
+          full_name: string
+          id: string
+          last_login_at: string | null
+          mobile: string
+          must_change_password: boolean
+          owner_id: string
+          photo_url: string | null
+          qualification: string | null
+          status: string
+          subject: string | null
+          teacher_code: string
+          temp_password: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          experience?: string | null
+          full_name: string
+          id?: string
+          last_login_at?: string | null
+          mobile: string
+          must_change_password?: boolean
+          owner_id: string
+          photo_url?: string | null
+          qualification?: string | null
+          status?: string
+          subject?: string | null
+          teacher_code: string
+          temp_password?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          experience?: string | null
+          full_name?: string
+          id?: string
+          last_login_at?: string | null
+          mobile?: string
+          must_change_password?: boolean
+          owner_id?: string
+          photo_url?: string | null
+          qualification?: string | null
+          status?: string
+          subject?: string | null
+          teacher_code?: string
+          temp_password?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       test_marks: {
         Row: {
           created_at: string
@@ -809,6 +1045,8 @@ export type Database = {
       current_institute_status: { Args: never; Returns: string }
       current_owner_id: { Args: never; Returns: string }
       current_student_batch_ids: { Args: never; Returns: string[] }
+      current_teacher_id: { Args: never; Returns: string }
+      current_teacher_owner_id: { Args: never; Returns: string }
       generate_activation_code: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -818,6 +1056,13 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      is_teacher: { Args: never; Returns: boolean }
+      is_teacher_of_batch: { Args: { _batch_id: string }; Returns: boolean }
+      is_teacher_of_batch_name: {
+        Args: { _batch_name: string }
+        Returns: boolean
+      }
+      next_teacher_code: { Args: { _owner_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "student" | "super_admin"

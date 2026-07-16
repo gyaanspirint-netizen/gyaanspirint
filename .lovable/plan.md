@@ -1,66 +1,108 @@
-# Today's Class Update — Plan
+# Teacher Portal & RBAC — Implementation Plan
 
-This turns the current Homework module into a richer "Today's Class Update" system without touching unrelated pages. Desktop keeps its layout; mobile gets a fully card-based responsive experience with a floating create button.
+This adds a third role (`teacher`) with its own portal, first-time activation flow, and admin-side management, without touching the existing Admin dashboard visuals or Super Admin flow.
 
-## 1. Rename & Navigation
-- Rename sidebar entry, page header, and route metadata from "Homework" to "Today's Class Update".
-- Keep the URL `/homework` to avoid breaking bookmarks and existing links (internal path only; UI label changes).
-- Update mobile bottom nav label + icon tooltip.
+## 1. Database (single migration)
 
-## 2. Database (single migration)
-Extend `homework` and add supporting tables:
-- `homework`: add `subject`, `class_name`, `batch`, `topic`, `notice`, `due_date`, `priority` (enum normal/important/urgent), `attachments` (jsonb array of {name,url,type,size}), `audience_type` (class/batch/students), `audience_ids` (uuid[]), `completion_status` per row via new table below, `published_at`.
-- New `homework_completion(homework_id, student_id, status: completed|partial|not_completed, marked_at)`.
-- New `homework_templates(id, owner_id, name, subject, topic, homework, notice, priority, attachments)`.
-- New `homework_reads(homework_id, student_id, read_at)` for "new until opened" badges.
-- Storage bucket `homework-attachments` (private) with RLS: owners upload; students in audience can read.
-- All tables get GRANTs + RLS scoped to `owner_id` (teacher) and audience membership (student).
+**Enum**
+- Extend `app_role` with `'teacher'`.
 
-## 3. Create/Edit Update Dialog
-- Redesigned dialog with sections: **Basics** (Subject, Class, Batch), **Content** (Topic*, Homework*, Notice, Due Date), **Priority** (segmented control with colored badge preview), **Attachments** (drag/drop upload PDF/images/docs, list with remove), **Audience** (Entire Class / Specific Batch / Selected Students tabs).
-- Actions: `Save as Template`, `Copy Previous Update` (opens picker of past updates → prefills), `Publish`.
-- Priority badge colors reuse existing tokens: normal=secondary, important=warning-ish (amber), urgent=destructive.
+**New tables (all in `public`, with GRANTs + RLS + `updated_at` trigger where relevant):**
 
-## 4. Templates
-- New tab "Templates" in the page. List cards with Use / Edit / Delete.
-- "Save as template" from create dialog captures current fields.
+- `teachers`
+  - `id`, `owner_id` (institute owner uuid), `user_id` (nullable until activation), `teacher_code` (e.g. `GS-TCH-0001`, unique per owner), `full_name`, `mobile`, `email`, `subject`, `qualification`, `experience`, `photo_url`, `status` (`pending|active|inactive`), `temp_password_hash`, `must_change_password`, `last_login_at`, `created_at`, `updated_at`.
+  - Unique: `(owner_id, mobile)`, `(owner_id, teacher_code)`.
+- `teacher_assignments`
+  - `id`, `owner_id`, `teacher_id`, `batch_id`, `subject`, `class_name`. Unique `(teacher_id, batch_id, subject)`.
+- `teacher_remarks`
+  - `id`, `owner_id`, `teacher_id`, `student_id`, `remark` (text), `tag` (enum-ish text: Excellent/Needs Improvement/…), `created_at`.
+- `announcements`
+  - `id`, `owner_id`, `teacher_id` (nullable, admin can post), `title`, `body`, `audience_type` (`batch|class|all`), `audience_ids uuid[]`, `created_at`.
+- `activity_log`
+  - `id`, `owner_id`, `actor_user_id`, `actor_role`, `action` (text), `entity_type`, `entity_id`, `metadata jsonb`, `created_at`.
 
-## 5. History & Search (Teacher view)
-- Tabs: **Updates** (default), **Templates**, **Reports**.
-- Search bar + filters (Subject, Batch, Class, Date range). Sorted newest first.
-- Each update card shows priority badge, subject, topic snippet, due date, audience summary, attachment count, completion stats.
-- Expanding shows full content + per-student completion marking (Completed / Partial / Not completed).
+**Helper functions (SECURITY DEFINER, `search_path = public`):**
+- `is_teacher_of_batch(_batch_id uuid)` → bool: current auth.uid() has a row in `teacher_assignments` for that batch.
+- `current_teacher_owner_id()` → uuid: institute owner for the current teacher.
+- `next_teacher_code(_owner_id)` → text: sequential `GS-TCH-XXXX`.
 
-## 6. Completion Tracking & Reports
-- After due date, teacher marks each student's status inline. Header shows counts + completion rate.
-- Reports tab: overall %, top missers list, class-wise / batch-wise / monthly bar summaries (simple aggregated cards using existing shadcn primitives — no new chart lib needed beyond existing recharts).
+**RLS policies (highlights):**
+- `teachers`: admin (owner) full CRUD on their rows; teacher can SELECT/UPDATE own row (limited columns via app layer).
+- `teacher_assignments`: admin CRUD on own rows; teacher SELECT own.
+- Existing `students`, `attendance`, `class_updates`, `tests`, `test_marks`, `batches`, `schedule`: **add teacher SELECT policies** gated by `is_teacher_of_batch(batch_id)` (or owner match + assignment for students). Add teacher INSERT/UPDATE where allowed (attendance, class_updates, tests, test_marks, teacher_remarks). Fee tables stay admin-only (teacher gets SELECT only where student is in their batch).
+- `activity_log`: admin SELECT own institute; teacher INSERT own; no delete.
 
-## 7. Student Dashboard
-- Student role view: card feed of published updates targeted to them, newest first.
-- Filters: Subject, Class, Batch, Date. Search box.
-- Card shows subject, topic, homework, notice, due date, priority badge, published date, attachment list (view/download/preview images inline via dialog).
-- Unread badge dot until student opens the card → writes `homework_reads` row. Nav shows count of unread.
+## 2. Auth & Activation Flow
 
-## 8. Mobile UX
-- Full-width rounded-2xl cards; no tables anywhere on mobile.
-- Sticky FAB "＋ Create Update" (teacher) above bottom nav.
-- Filter drawer instead of inline filter bar.
-- 44px min touch targets, generous spacing.
+- Login page: segmented control **Institute Admin / Teacher** (Super Admin still auto-detected).
+- **Teacher first login:** enters Teacher ID + Temporary Password → server fn `activateTeacher` verifies against `teachers.temp_password_hash`, then prompts for **new password** and **email confirmation**. Server creates the `auth.users` account with `email = <mobile>@teachers.gyanspirint.local` (deterministic synthetic email so mobile-based sign-in works via Supabase's email/password provider), links `teachers.user_id`, clears `temp_password_hash`, sets `status='active'`.
+- **Subsequent teacher login:** mobile number field → client resolves to synthetic email → `signInWithPassword`.
+- Role resolution in `useAuth` already prioritizes admin/super_admin; add `teacher` handling.
 
-## 9. Desktop UX
-- Keep existing two-column feel; add filter row above the table/card grid.
-- Table stays for update list on desktop with expandable rows for completion; other tabs use card grids.
+Server functions (all with `requireSupabaseAuth` unless noted):
+- `activateTeacher` — **public** (no auth), input: teacher_code, temp_password, new_password. Uses `supabaseAdmin` (loaded inside handler) to create user + update row.
+- `teacherSignInLookup` — public, mobile → synthetic email (for client to sign in).
+- Admin fns: `createTeacher`, `updateTeacher`, `deleteTeacher`, `setTeacherStatus`, `resetTeacherPassword`, `assignTeacher`, `unassignTeacher`, `listTeachers`, `listActivity`.
+- Teacher fns: `getMyAssignments`, `addRemark`, `createAnnouncement`, plus reuse of existing attendance/class-update/test fns (their RLS now permits teachers).
 
-## Technical notes
-- Files to add: `src/lib/class-updates.functions.ts`, `src/components/create-update-dialog.tsx`, `src/components/update-card.tsx`, `src/components/attachment-uploader.tsx`, `src/components/completion-tracker.tsx`, `src/components/homework-reports.tsx`.
-- File to overhaul: `src/routes/_authenticated/homework.tsx` (split teacher vs student view via role).
-- One Supabase migration for schema + storage bucket + policies.
-- Uploads via signed URLs from `homework-attachments` bucket; server function issues upload URLs; download via signed URL for private files.
-- Reuse existing design tokens; no new colors beyond mapping priority → existing semantic tokens.
+## 3. Admin Portal additions
+
+New sidebar item **Teachers** (admin only) → `/teachers`:
+- Table (desktop) / cards (mobile): name, code, mobile, subject, status, assignments count, actions.
+- Add Teacher dialog → auto-generates `teacher_code` + temp password; shows a "Copy credentials" panel post-create (Teacher ID, temp password, login URL) with Copy button.
+- Edit / Activate / Deactivate / Reset Password / Delete actions.
+- **Assignments tab** inside teacher detail: pick batch + subject; list existing.
+- **Activity Log** page `/activity` (admin only): filter by teacher, action, date.
+
+No changes to existing admin pages beyond adding these routes + sidebar entries.
+
+## 4. Teacher Portal
+
+New pathless layout `src/routes/_teacher/route.tsx` gated to `role === 'teacher'` (redirects admins/students away). Sidebar + mobile bottom nav variant for teachers.
+
+Routes under `/teacher/*`:
+- `/teacher` — Dashboard: welcome, today's classes, pending attendance/homework/tests counts, recent activity, quick actions, today's schedule.
+- `/teacher/attendance` — list of assigned batches → mark/edit today, view history (assigned batches only).
+- `/teacher/updates` — reuse existing class-updates UI but scoped: teacher sees only their updates + can create for assigned batches/students.
+- `/teacher/tests` — create test, upload/edit marks, history, download CSV.
+- `/teacher/students` — list of students in assigned batches; profile view shows attendance/homework/tests/remarks; **fees read-only**.
+- `/teacher/remarks` — quick add remark for a student with tag chips.
+- `/teacher/announcements` — create/list announcements for assigned batches.
+- `/teacher/schedule` — today / weekly / upcoming.
+- `/teacher/profile` — edit photo, password, email, qualification, experience. Teacher ID + mobile read-only.
+
+Mobile: card layout, FAB for primary action per page, 44px touch targets, no horizontal scroll. Desktop: clean two-column with sidebar (same design tokens as admin).
+
+## 5. Activity logging
+
+Wrap teacher mutation server fns with an `await logActivity(...)` insert. Admin activity log page reads `activity_log` filtered by their `owner_id`.
+
+## 6. Permission enforcement summary
+
+Enforced at DB (RLS) — client UI just hides disallowed controls:
+- Teacher: no delete on students/teachers, no fee writes, no institute/subscription access, cannot read other teachers' batch data (assignment-gated policies).
+- Admin: unchanged full access within their institute.
+- Super admin: unchanged.
+
+## 7. Files
+
+**New**
+- `supabase/migrations/…_teacher_rbac.sql`
+- `src/lib/teachers.functions.ts`, `src/lib/teacher-portal.functions.ts`, `src/lib/activity.functions.ts`, `src/lib/announcements.functions.ts`, `src/lib/remarks.functions.ts`
+- `src/routes/_authenticated/teachers.tsx`, `src/routes/_authenticated/activity.tsx`
+- `src/routes/_teacher/route.tsx` + `index.tsx`, `attendance.tsx`, `updates.tsx`, `tests.tsx`, `students.tsx`, `remarks.tsx`, `announcements.tsx`, `schedule.tsx`, `profile.tsx`
+- `src/components/teacher-sidebar.tsx`, `src/components/teacher-bottom-nav.tsx`, `src/components/add-teacher-dialog.tsx`, `src/components/assign-teacher-dialog.tsx`, `src/components/teacher-credentials-card.tsx`
+
+**Edited**
+- `src/routes/auth.tsx` — add Admin/Teacher toggle + activation flow.
+- `src/hooks/use-auth.tsx` — recognize `teacher` role.
+- `src/components/app-sidebar.tsx` — add Teachers + Activity items for admin.
+- `src/routes/_authenticated/route.tsx` — redirect teachers to `/teacher`.
 
 ## Out of scope
-- Push/email notifications (only in-app unread badge).
-- Rich text editor (plain textarea kept for speed; can add later).
-- Bulk CSV export of reports.
+- Push notifications.
+- Full rich-text editor in remarks/announcements.
+- Bulk teacher CSV import.
+- Real SMS delivery of credentials (Copy-to-clipboard only).
 
-Proceeding after approval — this is a multi-file change (~8 files + 1 migration).
+Proceeding after approval — this is a large, multi-file change (~20 files + 1 migration).
