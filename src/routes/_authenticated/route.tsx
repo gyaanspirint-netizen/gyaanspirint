@@ -39,17 +39,29 @@ function AuthedLayout() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user || cancelled) return;
 
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", u.user.id);
-      const roleList = (roles ?? []).map((r) => r.role);
+      const [rolesRes, teacherRes] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", u.user.id),
+        supabase.from("teachers").select("id, status").eq("user_id", u.user.id).maybeSingle(),
+      ]);
+      const roleList = (rolesRes.data ?? []).map((r) => r.role);
       const isSuperAdmin = roleList.includes("super_admin");
 
       if (isSuperAdmin) {
         authCheckCache = { userId: u.user.id, ok: true };
         if (!cancelled) {
           navigate({ to: "/super-admin", replace: true });
+          setChecked(true);
+        }
+        return;
+      }
+
+      const isTeacher = teacherRes.data && teacherRes.data.status === "active";
+      if (isTeacher && !roleList.includes("admin")) {
+        authCheckCache = { userId: u.user.id, ok: true };
+        if (!cancelled) {
+          if (!window.location.pathname.startsWith("/teacher") && window.location.pathname !== "/settings") {
+            navigate({ to: "/teacher", replace: true });
+          }
           setChecked(true);
         }
         return;

@@ -13,6 +13,10 @@ import {
   NotebookPen,
   LifeBuoy,
   Shield,
+  UserCog,
+  Activity,
+  Megaphone,
+  MessageSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,12 +38,14 @@ import logoAsset from "@/assets/gyanspirint-logo.png.asset.json";
 const adminItems = [
   { title: "Institute Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Students", url: "/students", icon: Users },
+  { title: "Teachers", url: "/teachers", icon: UserCog },
   { title: "Batches", url: "/batches", icon: CalendarClock },
   { title: "Class Updates", url: "/homework", icon: NotebookPen },
   { title: "Schedule", url: "/schedule", icon: Calendar },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
   { title: "Tests", url: "/tests", icon: FileText },
   { title: "Fees", url: "/fees", icon: Wallet },
+  { title: "Activity Log", url: "/activity", icon: Activity },
   { title: "Help Desk", url: "/help-desk", icon: LifeBuoy },
 ] as const;
 
@@ -51,6 +57,18 @@ const studentItems = [
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck },
   { title: "Tests", url: "/tests", icon: FileText },
   { title: "Help Desk", url: "/help-desk", icon: LifeBuoy },
+] as const;
+
+const teacherItems = [
+  { title: "Dashboard", url: "/teacher", icon: LayoutDashboard },
+  { title: "Attendance", url: "/teacher/attendance", icon: ClipboardCheck },
+  { title: "Class Updates", url: "/teacher/updates", icon: NotebookPen },
+  { title: "Tests", url: "/teacher/tests", icon: FileText },
+  { title: "Students", url: "/teacher/students", icon: Users },
+  { title: "Remarks", url: "/teacher/remarks", icon: MessageSquare },
+  { title: "Announcements", url: "/teacher/announcements", icon: Megaphone },
+  { title: "Schedule", url: "/teacher/schedule", icon: Calendar },
+  { title: "My Profile", url: "/teacher/profile", icon: UserCog },
 ] as const;
 
 const superAdminItems = [
