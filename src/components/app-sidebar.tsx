@@ -112,7 +112,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>
-            {role === "super_admin" ? "Platform" : role === "admin" ? "Admin" : "Student"}
+            {role === "super_admin" ? "Platform" : role === "admin" ? "Admin" : role === "teacher" ? "Teacher" : "Student"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>

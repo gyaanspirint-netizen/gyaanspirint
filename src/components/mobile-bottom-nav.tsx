@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, ClipboardCheck, Wallet, FileText, CalendarClock, NotebookPen } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardCheck, Wallet, FileText, CalendarClock, NotebookPen, MessageSquare, Megaphone } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
@@ -19,11 +19,19 @@ const studentTabs = [
   { title: "Tests", url: "/tests", icon: FileText },
 ] as const;
 
+const teacherTabs = [
+  { title: "Home", url: "/teacher", icon: LayoutDashboard },
+  { title: "Attendance", url: "/teacher/attendance", icon: ClipboardCheck },
+  { title: "Updates", url: "/teacher/updates", icon: NotebookPen },
+  { title: "Students", url: "/teacher/students", icon: Users },
+  { title: "More", url: "/teacher/profile", icon: MessageSquare },
+] as const;
+
 export function MobileBottomNav() {
   const { role } = useAuth();
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   if (role === "super_admin" || role === null) return null;
-  const tabs = role === "admin" ? adminTabs : studentTabs;
+  const tabs = role === "admin" ? adminTabs : role === "teacher" ? teacherTabs : studentTabs;
 
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 pb-[env(safe-area-inset-bottom)]">
