@@ -19,6 +19,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RegisterTokenRouteImport } from './routes/register.$token'
 import { Route as AuthenticatedTestsRouteImport } from './routes/_authenticated/tests'
+import { Route as AuthenticatedTeachersRouteImport } from './routes/_authenticated/teachers'
 import { Route as AuthenticatedSuperAdminRouteImport } from './routes/_authenticated/super-admin'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
 import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticated/student'
@@ -32,6 +33,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBatchesRouteImport } from './routes/_authenticated/batches'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 
 const SetupPasswordRoute = SetupPasswordRouteImport.update({
   id: '/setup-password',
@@ -80,6 +82,11 @@ const RegisterTokenRoute = RegisterTokenRouteImport.update({
 const AuthenticatedTestsRoute = AuthenticatedTestsRouteImport.update({
   id: '/tests',
   path: '/tests',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTeachersRoute = AuthenticatedTeachersRouteImport.update({
+  id: '/teachers',
+  path: '/teachers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSuperAdminRoute = AuthenticatedSuperAdminRouteImport.update({
@@ -147,6 +154,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -156,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/pending-approval': typeof PendingApprovalRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup-password': typeof SetupPasswordRoute
+  '/activity': typeof AuthenticatedActivityRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/batches': typeof AuthenticatedBatchesRoute
@@ -169,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/student': typeof AuthenticatedStudentRoute
   '/students': typeof AuthenticatedStudentsRoute
   '/super-admin': typeof AuthenticatedSuperAdminRoute
+  '/teachers': typeof AuthenticatedTeachersRoute
   '/tests': typeof AuthenticatedTestsRoute
   '/register/$token': typeof RegisterTokenRoute
 }
@@ -180,6 +194,7 @@ export interface FileRoutesByTo {
   '/pending-approval': typeof PendingApprovalRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup-password': typeof SetupPasswordRoute
+  '/activity': typeof AuthenticatedActivityRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/batches': typeof AuthenticatedBatchesRoute
@@ -193,6 +208,7 @@ export interface FileRoutesByTo {
   '/student': typeof AuthenticatedStudentRoute
   '/students': typeof AuthenticatedStudentsRoute
   '/super-admin': typeof AuthenticatedSuperAdminRoute
+  '/teachers': typeof AuthenticatedTeachersRoute
   '/tests': typeof AuthenticatedTestsRoute
   '/register/$token': typeof RegisterTokenRoute
 }
@@ -206,6 +222,7 @@ export interface FileRoutesById {
   '/pending-approval': typeof PendingApprovalRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup-password': typeof SetupPasswordRoute
+  '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/batches': typeof AuthenticatedBatchesRoute
@@ -219,6 +236,7 @@ export interface FileRoutesById {
   '/_authenticated/student': typeof AuthenticatedStudentRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/super-admin': typeof AuthenticatedSuperAdminRoute
+  '/_authenticated/teachers': typeof AuthenticatedTeachersRoute
   '/_authenticated/tests': typeof AuthenticatedTestsRoute
   '/register/$token': typeof RegisterTokenRoute
 }
@@ -232,6 +250,7 @@ export interface FileRouteTypes {
     | '/pending-approval'
     | '/reset-password'
     | '/setup-password'
+    | '/activity'
     | '/admin'
     | '/attendance'
     | '/batches'
@@ -245,6 +264,7 @@ export interface FileRouteTypes {
     | '/student'
     | '/students'
     | '/super-admin'
+    | '/teachers'
     | '/tests'
     | '/register/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -256,6 +276,7 @@ export interface FileRouteTypes {
     | '/pending-approval'
     | '/reset-password'
     | '/setup-password'
+    | '/activity'
     | '/admin'
     | '/attendance'
     | '/batches'
@@ -269,6 +290,7 @@ export interface FileRouteTypes {
     | '/student'
     | '/students'
     | '/super-admin'
+    | '/teachers'
     | '/tests'
     | '/register/$token'
   id:
@@ -281,6 +303,7 @@ export interface FileRouteTypes {
     | '/pending-approval'
     | '/reset-password'
     | '/setup-password'
+    | '/_authenticated/activity'
     | '/_authenticated/admin'
     | '/_authenticated/attendance'
     | '/_authenticated/batches'
@@ -294,6 +317,7 @@ export interface FileRouteTypes {
     | '/_authenticated/student'
     | '/_authenticated/students'
     | '/_authenticated/super-admin'
+    | '/_authenticated/teachers'
     | '/_authenticated/tests'
     | '/register/$token'
   fileRoutesById: FileRoutesById
@@ -380,6 +404,13 @@ declare module '@tanstack/react-router' {
       path: '/tests'
       fullPath: '/tests'
       preLoaderRoute: typeof AuthenticatedTestsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/teachers': {
+      id: '/_authenticated/teachers'
+      path: '/teachers'
+      fullPath: '/teachers'
+      preLoaderRoute: typeof AuthenticatedTeachersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/super-admin': {
@@ -473,10 +504,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/activity': {
+      id: '/_authenticated/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof AuthenticatedActivityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedBatchesRoute: typeof AuthenticatedBatchesRoute
@@ -490,10 +529,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStudentRoute: typeof AuthenticatedStudentRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedSuperAdminRoute: typeof AuthenticatedSuperAdminRoute
+  AuthenticatedTeachersRoute: typeof AuthenticatedTeachersRoute
   AuthenticatedTestsRoute: typeof AuthenticatedTestsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedBatchesRoute: AuthenticatedBatchesRoute,
@@ -507,6 +548,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStudentRoute: AuthenticatedStudentRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedSuperAdminRoute: AuthenticatedSuperAdminRoute,
+  AuthenticatedTeachersRoute: AuthenticatedTeachersRoute,
   AuthenticatedTestsRoute: AuthenticatedTestsRoute,
 }
 
