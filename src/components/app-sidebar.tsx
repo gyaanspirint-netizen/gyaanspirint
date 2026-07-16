@@ -88,7 +88,9 @@ export function AppSidebar() {
       ? superAdminItems
       : role === "admin"
         ? adminItems
-        : studentItems;
+        : role === "teacher"
+          ? teacherItems
+          : studentItems;
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
