@@ -122,8 +122,12 @@ function BatchesPage() {
         });
     });
     setCounts(map);
-    const { data: ts } = await supabase.from("batch_teachers").select("*");
-    setTeachers((ts ?? []) as Teacher[]);
+    const [asRes, tsRes] = await Promise.all([
+      supabase.from("teacher_assignments").select("id, batch_id, teacher_id, subject"),
+      supabase.from("teachers").select("id, full_name").eq("status", "active").order("full_name"),
+    ]);
+    setAssignments((asRes.data ?? []) as Assignment[]);
+    setEnrolledTeachers((tsRes.data ?? []) as EnrolledTeacher[]);
     setLoading(false);
   };
 
