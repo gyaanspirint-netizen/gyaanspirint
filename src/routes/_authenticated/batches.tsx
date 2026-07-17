@@ -502,34 +502,38 @@ function BatchesPage() {
 
             {editing && (
               <div className="space-y-2 border-t pt-4">
-                <Label>Assigned Teachers ({currentTeachers.length})</Label>
-                {currentTeachers.length > 0 && (
+                <Label>Assigned Teachers ({currentAssignments.length})</Label>
+                {currentAssignments.length > 0 && (
                   <div className="space-y-1">
-                    {currentTeachers.map((t) => (
-                      <div key={t.id} className="flex items-center justify-between text-sm border rounded px-2 py-1">
+                    {currentAssignments.map((a) => (
+                      <div key={a.id} className="flex items-center justify-between text-sm border rounded px-2 py-1">
                         <div>
-                          <span className="font-medium">{t.teacher_name}</span>
-                          {t.subject && <span className="text-muted-foreground"> · {t.subject}</span>}
-                          {t.email && <span className="text-muted-foreground"> · {t.email}</span>}
+                          <span className="font-medium">{teacherName(a.teacher_id)}</span>
+                          {a.subject && <span className="text-muted-foreground"> · {a.subject}</span>}
                         </div>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => removeTeacher(t.id)}>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeTeacher(a.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     ))}
                   </div>
                 )}
-                <div className="grid grid-cols-3 gap-2">
-                  <Input placeholder="Teacher name" value={teacherForm.teacher_name}
-                    onChange={(e) => setTeacherForm({ ...teacherForm, teacher_name: e.target.value })} />
-                  <Input placeholder="Subject" value={teacherForm.subject}
+                <div className="grid grid-cols-2 gap-2">
+                  <Select value={teacherForm.teacher_id} onValueChange={(v) => setTeacherForm({ ...teacherForm, teacher_id: v })}>
+                    <SelectTrigger><SelectValue placeholder={availableTeachers.length ? "Select teacher" : "No teachers available"} /></SelectTrigger>
+                    <SelectContent>
+                      {availableTeachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Input placeholder="Subject (optional)" value={teacherForm.subject}
                     onChange={(e) => setTeacherForm({ ...teacherForm, subject: e.target.value })} />
-                  <Input placeholder="Email" type="email" value={teacherForm.email}
-                    onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })} />
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={addTeacher}>
-                  <Plus className="h-4 w-4 mr-1" /> Add teacher
+                  <Plus className="h-4 w-4 mr-1" /> Assign
                 </Button>
+                {enrolledTeachers.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Enroll teachers in the Teachers page first.</p>
+                )}
               </div>
             )}
 
