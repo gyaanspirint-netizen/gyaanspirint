@@ -96,8 +96,9 @@ function BatchesPage() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [teacherForm, setTeacherForm] = useState({ teacher_name: "", subject: "", email: "" });
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [enrolledTeachers, setEnrolledTeachers] = useState<EnrolledTeacher[]>([]);
+  const [teacherForm, setTeacherForm] = useState({ teacher_id: "", subject: "" });
   const [teacherBatch, setTeacherBatch] = useState<Batch | null>(null);
 
   const fetchAll = async () => {
