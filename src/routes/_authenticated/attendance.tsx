@@ -309,26 +309,36 @@ function AdminAttendance() {
                             </div>
                             {current === "present" ? <Badge>Present</Badge>
                               : current === "absent" ? <Badge variant="destructive">Absent</Badge>
+                              : current === "leave" ? <Badge variant="secondary">Leave</Badge>
                               : <Badge variant="outline">Not marked</Badge>}
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <Button
-                              size="lg"
-                              className="h-12 rounded-xl"
+                              size="sm"
+                              className="h-11 rounded-xl"
                               variant={current === "present" ? "default" : "outline"}
                               disabled={savingId === s.id}
                               onClick={() => mark(s.id, "present")}
                             >
-                              <Check className="h-5 w-5 mr-1" /> Present
+                              <Check className="h-4 w-4 mr-1" /> Present
                             </Button>
                             <Button
-                              size="lg"
-                              className="h-12 rounded-xl"
+                              size="sm"
+                              className="h-11 rounded-xl"
                               variant={current === "absent" ? "destructive" : "outline"}
                               disabled={savingId === s.id}
                               onClick={() => mark(s.id, "absent")}
                             >
-                              <X className="h-5 w-5 mr-1" /> Absent
+                              <X className="h-4 w-4 mr-1" /> Absent
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-11 rounded-xl"
+                              variant={current === "leave" ? "secondary" : "outline"}
+                              disabled={savingId === s.id}
+                              onClick={() => mark(s.id, "leave")}
+                            >
+                              Leave
                             </Button>
                           </div>
                           {current === "absent" && s.parent_phone && (
