@@ -216,14 +216,15 @@ function BatchesPage() {
 
   const addTeacher = async () => {
     if (!activeBatch) return toast.error("Save the batch first, then add teachers");
-    if (!teacherForm.teacher_name.trim()) return toast.error("Teacher name required");
+    if (!teacherForm.teacher_id) return toast.error("Select a teacher");
     const { data: u } = await supabase.auth.getUser();
     if (!u.user?.id) return toast.error("You must be signed in");
-    const { error } = await supabase.from("batch_teachers").insert({
+    const dup = assignments.some((a) => a.batch_id === activeBatch.id && a.teacher_id === teacherForm.teacher_id);
+    if (dup) return toast.error("This teacher is already assigned");
+    const { error } = await supabase.from("teacher_assignments").insert({
       batch_id: activeBatch.id,
-      teacher_name: teacherForm.teacher_name.trim(),
-      subject: teacherForm.subject.trim(),
-      email: teacherForm.email.trim(),
+      teacher_id: teacherForm.teacher_id,
+      subject: teacherForm.subject.trim() || null,
       owner_id: u.user.id,
     });
     if (error) return toast.error(`Could not assign teacher: ${error.message}`);
@@ -233,7 +234,10 @@ function BatchesPage() {
   };
 
   const removeTeacher = async (id: string) => {
-    const { error } = await supabase.from("batch_teachers").delete().eq("id", id);
+    const { error } = await supabase.from("teacher_assignments").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    fetchAll();
+  };
     if (error) return toast.error(error.message);
     fetchAll();
   };
