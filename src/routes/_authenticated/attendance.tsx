@@ -68,6 +68,10 @@ function AttendancePage() {
     );
   }
 
+  if (role === "teacher") {
+    if (typeof window !== "undefined") window.location.replace("/teacher/attendance");
+    return null;
+  }
   return role === "admin" ? <AdminAttendance /> : <StudentAttendance />;
 }
 
