@@ -1066,7 +1066,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "student" | "super_admin" | "teacher"
-      attendance_status: "present" | "absent"
+      attendance_status: "present" | "absent" | "leave"
       completion_status: "completed" | "partial" | "not_completed"
       update_audience: "class" | "batch" | "students"
       update_priority: "normal" | "important" | "urgent"
@@ -1198,7 +1198,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "student", "super_admin", "teacher"],
-      attendance_status: ["present", "absent"],
+      attendance_status: ["present", "absent", "leave"],
       completion_status: ["completed", "partial", "not_completed"],
       update_audience: ["class", "batch", "students"],
       update_priority: ["normal", "important", "urgent"],
