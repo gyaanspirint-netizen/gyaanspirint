@@ -381,6 +381,8 @@ function AdminAttendance() {
                                   <Badge>Present</Badge>
                                 ) : current === "absent" ? (
                                   <Badge variant="destructive">Absent</Badge>
+                                ) : current === "leave" ? (
+                                  <Badge variant="secondary">Leave</Badge>
                                 ) : (
                                   <Badge variant="outline">Not marked</Badge>
                                 )}
@@ -388,9 +390,7 @@ function AdminAttendance() {
                               <TableCell className="text-right space-x-2">
                                 <Button
                                   size="sm"
-                                  variant={
-                                    current === "present" ? "default" : "outline"
-                                  }
+                                  variant={current === "present" ? "default" : "outline"}
                                   disabled={savingId === s.id}
                                   onClick={() => mark(s.id, "present")}
                                 >
@@ -398,15 +398,19 @@ function AdminAttendance() {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  variant={
-                                    current === "absent"
-                                      ? "destructive"
-                                      : "outline"
-                                  }
+                                  variant={current === "absent" ? "destructive" : "outline"}
                                   disabled={savingId === s.id}
                                   onClick={() => mark(s.id, "absent")}
                                 >
                                   <X className="h-4 w-4 mr-1" /> Absent
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={current === "leave" ? "secondary" : "outline"}
+                                  disabled={savingId === s.id}
+                                  onClick={() => mark(s.id, "leave")}
+                                >
+                                  Leave
                                 </Button>
                                 {current === "absent" && (
                                   <Button
