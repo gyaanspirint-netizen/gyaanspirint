@@ -1065,7 +1065,7 @@ export type Database = {
       next_teacher_code: { Args: { _owner_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "admin" | "student" | "super_admin"
+      app_role: "admin" | "student" | "super_admin" | "teacher"
       attendance_status: "present" | "absent"
       completion_status: "completed" | "partial" | "not_completed"
       update_audience: "class" | "batch" | "students"
@@ -1197,7 +1197,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "student", "super_admin"],
+      app_role: ["admin", "student", "super_admin", "teacher"],
       attendance_status: ["present", "absent"],
       completion_status: ["completed", "partial", "not_completed"],
       update_audience: ["class", "batch", "students"],
