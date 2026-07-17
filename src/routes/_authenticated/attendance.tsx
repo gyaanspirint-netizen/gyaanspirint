@@ -466,6 +466,8 @@ function AdminAttendance() {
                           <TableCell>
                             {r.status === "present" ? (
                               <Badge>Present</Badge>
+                            ) : r.status === "leave" ? (
+                              <Badge variant="secondary">Leave</Badge>
                             ) : (
                               <Badge variant="destructive">Absent</Badge>
                             )}
