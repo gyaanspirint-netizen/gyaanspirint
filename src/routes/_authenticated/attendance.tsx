@@ -46,7 +46,7 @@ type AttendanceRow = {
   id: string;
   student_id: string;
   date: string;
-  status: "present" | "absent";
+  status: "present" | "absent" | "leave";
   batch?: string;
 };
 
@@ -68,6 +68,10 @@ function AttendancePage() {
     );
   }
 
+  if (role === "teacher") {
+    if (typeof window !== "undefined") window.location.replace("/teacher/attendance");
+    return null;
+  }
   return role === "admin" ? <AdminAttendance /> : <StudentAttendance />;
 }
 
@@ -76,7 +80,7 @@ function AdminAttendance() {
   const [batchList, setBatchList] = useState<string[]>([]);
   const [selectedBatch, setSelectedBatch] = useState<string>("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [todayMap, setTodayMap] = useState<Record<string, "present" | "absent">>({});
+  const [todayMap, setTodayMap] = useState<Record<string, "present" | "absent" | "leave">>({});
   const [history, setHistory] = useState<AttendanceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -116,7 +120,7 @@ function AdminAttendance() {
       toast.error(error.message);
       return;
     }
-    const map: Record<string, "present" | "absent"> = {};
+    const map: Record<string, "present" | "absent" | "leave"> = {};
     (data ?? []).forEach((r) => {
       map[r.student_id] = r.status;
     });
@@ -151,7 +155,7 @@ function AdminAttendance() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, selectedBatch]);
 
-  const mark = async (studentId: string, status: "present" | "absent") => {
+  const mark = async (studentId: string, status: "present" | "absent" | "leave") => {
     if (!selectedBatch) { toast.error("Select a batch"); return; }
     const dbBatch = selectedBatch === "__none__" ? "" : selectedBatch;
     setSavingId(studentId);
@@ -305,26 +309,36 @@ function AdminAttendance() {
                             </div>
                             {current === "present" ? <Badge>Present</Badge>
                               : current === "absent" ? <Badge variant="destructive">Absent</Badge>
+                              : current === "leave" ? <Badge variant="secondary">Leave</Badge>
                               : <Badge variant="outline">Not marked</Badge>}
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <Button
-                              size="lg"
-                              className="h-12 rounded-xl"
+                              size="sm"
+                              className="h-11 rounded-xl"
                               variant={current === "present" ? "default" : "outline"}
                               disabled={savingId === s.id}
                               onClick={() => mark(s.id, "present")}
                             >
-                              <Check className="h-5 w-5 mr-1" /> Present
+                              <Check className="h-4 w-4 mr-1" /> Present
                             </Button>
                             <Button
-                              size="lg"
-                              className="h-12 rounded-xl"
+                              size="sm"
+                              className="h-11 rounded-xl"
                               variant={current === "absent" ? "destructive" : "outline"}
                               disabled={savingId === s.id}
                               onClick={() => mark(s.id, "absent")}
                             >
-                              <X className="h-5 w-5 mr-1" /> Absent
+                              <X className="h-4 w-4 mr-1" /> Absent
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-11 rounded-xl"
+                              variant={current === "leave" ? "secondary" : "outline"}
+                              disabled={savingId === s.id}
+                              onClick={() => mark(s.id, "leave")}
+                            >
+                              Leave
                             </Button>
                           </div>
                           {current === "absent" && s.parent_phone && (
@@ -367,6 +381,8 @@ function AdminAttendance() {
                                   <Badge>Present</Badge>
                                 ) : current === "absent" ? (
                                   <Badge variant="destructive">Absent</Badge>
+                                ) : current === "leave" ? (
+                                  <Badge variant="secondary">Leave</Badge>
                                 ) : (
                                   <Badge variant="outline">Not marked</Badge>
                                 )}
@@ -374,9 +390,7 @@ function AdminAttendance() {
                               <TableCell className="text-right space-x-2">
                                 <Button
                                   size="sm"
-                                  variant={
-                                    current === "present" ? "default" : "outline"
-                                  }
+                                  variant={current === "present" ? "default" : "outline"}
                                   disabled={savingId === s.id}
                                   onClick={() => mark(s.id, "present")}
                                 >
@@ -384,15 +398,19 @@ function AdminAttendance() {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  variant={
-                                    current === "absent"
-                                      ? "destructive"
-                                      : "outline"
-                                  }
+                                  variant={current === "absent" ? "destructive" : "outline"}
                                   disabled={savingId === s.id}
                                   onClick={() => mark(s.id, "absent")}
                                 >
                                   <X className="h-4 w-4 mr-1" /> Absent
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={current === "leave" ? "secondary" : "outline"}
+                                  disabled={savingId === s.id}
+                                  onClick={() => mark(s.id, "leave")}
+                                >
+                                  Leave
                                 </Button>
                                 {current === "absent" && (
                                   <Button
@@ -448,6 +466,8 @@ function AdminAttendance() {
                           <TableCell>
                             {r.status === "present" ? (
                               <Badge>Present</Badge>
+                            ) : r.status === "leave" ? (
+                              <Badge variant="secondary">Leave</Badge>
                             ) : (
                               <Badge variant="destructive">Absent</Badge>
                             )}
@@ -594,7 +614,7 @@ function StudentAttendance() {
                       <TableCell>{format(new Date(r.date), "PPP")}</TableCell>
                       <TableCell>{r.batch || "—"}</TableCell>
                       <TableCell>
-                        {r.status === "present" ? <Badge>Present</Badge> : <Badge variant="destructive">Absent</Badge>}
+                        {r.status === "present" ? <Badge>Present</Badge> : r.status === "leave" ? <Badge variant="secondary">Leave</Badge> : <Badge variant="destructive">Absent</Badge>}
                       </TableCell>
                     </TableRow>
                   ))}

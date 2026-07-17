@@ -52,7 +52,7 @@ function StudentDashboard() {
     admission_date: string;
   } | null>(null);
   const [attendance, setAttendance] = useState<
-    { id: string; date: string; status: "present" | "absent" }[]
+    { id: string; date: string; status: "present" | "absent" | "leave" }[]
   >([]);
   const [tests, setTests] = useState<
     { id: string; test_name: string; subject: string; batch: string; test_date: string }[]
@@ -155,7 +155,7 @@ function StudentDashboard() {
           (attendanceRes.data ?? []).map((r) => ({
             id: r.id,
             date: r.date,
-            status: r.status as "present" | "absent",
+            status: r.status as "present" | "absent" | "leave",
           })),
         );
       }
@@ -199,7 +199,7 @@ function StudentDashboard() {
           : { label: "Pending", variant: "destructive" as const };
 
   // Dedupe by date: a day is "present" if marked present in ANY batch that day.
-  const dayStatusMap = attendance.reduce<Record<string, "present" | "absent">>((acc, a) => {
+  const dayStatusMap = attendance.reduce<Record<string, "present" | "absent" | "leave">>((acc, a) => {
     if (acc[a.date] === "present") return acc;
     acc[a.date] = a.status;
     return acc;

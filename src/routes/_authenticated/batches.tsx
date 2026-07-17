@@ -62,7 +62,8 @@ type Batch = {
   status: string;
 };
 
-type Teacher = { id: string; batch_id: string; teacher_name: string; subject: string; email: string };
+type Assignment = { id: string; batch_id: string; teacher_id: string; subject: string | null };
+type EnrolledTeacher = { id: string; full_name: string };
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
@@ -95,8 +96,9 @@ function BatchesPage() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [teacherForm, setTeacherForm] = useState({ teacher_name: "", subject: "", email: "" });
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [enrolledTeachers, setEnrolledTeachers] = useState<EnrolledTeacher[]>([]);
+  const [teacherForm, setTeacherForm] = useState({ teacher_id: "", subject: "" });
   const [teacherBatch, setTeacherBatch] = useState<Batch | null>(null);
 
   const fetchAll = async () => {
@@ -120,8 +122,12 @@ function BatchesPage() {
         });
     });
     setCounts(map);
-    const { data: ts } = await supabase.from("batch_teachers").select("*");
-    setTeachers((ts ?? []) as Teacher[]);
+    const [asRes, tsRes] = await Promise.all([
+      supabase.from("teacher_assignments").select("id, batch_id, teacher_id, subject"),
+      supabase.from("teachers").select("id, full_name").eq("status", "active").order("full_name"),
+    ]);
+    setAssignments((asRes.data ?? []) as Assignment[]);
+    setEnrolledTeachers((tsRes.data ?? []) as EnrolledTeacher[]);
     setLoading(false);
   };
 
@@ -133,7 +139,7 @@ function BatchesPage() {
     setEditing(null);
     setForm(empty);
     setErrors({});
-    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+    setTeacherForm({ teacher_id: "", subject: "" });
     setOpen(true);
   };
   const openEdit = (b: Batch) => {
@@ -150,7 +156,7 @@ function BatchesPage() {
       status: (b.status as FormValues["status"]) ?? "active",
     });
     setErrors({});
-    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+    setTeacherForm({ teacher_id: "", subject: "" });
     setOpen(true);
   };
 
@@ -210,31 +216,33 @@ function BatchesPage() {
 
   const addTeacher = async () => {
     if (!activeBatch) return toast.error("Save the batch first, then add teachers");
-    if (!teacherForm.teacher_name.trim()) return toast.error("Teacher name required");
+    if (!teacherForm.teacher_id) return toast.error("Select a teacher");
     const { data: u } = await supabase.auth.getUser();
     if (!u.user?.id) return toast.error("You must be signed in");
-    const { error } = await supabase.from("batch_teachers").insert({
+    const dup = assignments.some((a) => a.batch_id === activeBatch.id && a.teacher_id === teacherForm.teacher_id);
+    if (dup) return toast.error("This teacher is already assigned");
+    const { error } = await supabase.from("teacher_assignments").insert({
       batch_id: activeBatch.id,
-      teacher_name: teacherForm.teacher_name.trim(),
-      subject: teacherForm.subject.trim(),
-      email: teacherForm.email.trim(),
+      teacher_id: teacherForm.teacher_id,
+      subject: teacherForm.subject.trim() || null,
       owner_id: u.user.id,
     });
     if (error) return toast.error(`Could not assign teacher: ${error.message}`);
     toast.success("Teacher assigned");
-    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+    setTeacherForm({ teacher_id: "", subject: "" });
     fetchAll();
   };
 
   const removeTeacher = async (id: string) => {
-    const { error } = await supabase.from("batch_teachers").delete().eq("id", id);
+    const { error } = await supabase.from("teacher_assignments").delete().eq("id", id);
     if (error) return toast.error(error.message);
     fetchAll();
   };
 
+
   const openAssignTeachers = (b: Batch) => {
     setTeacherBatch(b);
-    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+    setTeacherForm({ teacher_id: "", subject: "" });
   };
 
   const onDelete = async () => {
@@ -246,8 +254,10 @@ function BatchesPage() {
     fetchAll();
   };
 
-  const teacherCount = (batchId: string) => teachers.filter((t) => t.batch_id === batchId).length;
-  const currentTeachers = activeBatch ? teachers.filter((t) => t.batch_id === activeBatch.id) : [];
+  const teacherCount = (batchId: string) => assignments.filter((a) => a.batch_id === batchId).length;
+  const currentAssignments = activeBatch ? assignments.filter((a) => a.batch_id === activeBatch.id) : [];
+  const teacherName = (id: string) => enrolledTeachers.find((t) => t.id === id)?.full_name ?? "Teacher";
+  const availableTeachers = enrolledTeachers.filter((t) => !currentAssignments.some((a) => a.teacher_id === t.id));
   const scheduleLabel = (b: Batch) =>
     b.schedule_type === "daily" ? "Daily"
     : b.schedule_type === "alternate" ? "Alternate"
@@ -492,34 +502,38 @@ function BatchesPage() {
 
             {editing && (
               <div className="space-y-2 border-t pt-4">
-                <Label>Assigned Teachers ({currentTeachers.length})</Label>
-                {currentTeachers.length > 0 && (
+                <Label>Assigned Teachers ({currentAssignments.length})</Label>
+                {currentAssignments.length > 0 && (
                   <div className="space-y-1">
-                    {currentTeachers.map((t) => (
-                      <div key={t.id} className="flex items-center justify-between text-sm border rounded px-2 py-1">
+                    {currentAssignments.map((a) => (
+                      <div key={a.id} className="flex items-center justify-between text-sm border rounded px-2 py-1">
                         <div>
-                          <span className="font-medium">{t.teacher_name}</span>
-                          {t.subject && <span className="text-muted-foreground"> · {t.subject}</span>}
-                          {t.email && <span className="text-muted-foreground"> · {t.email}</span>}
+                          <span className="font-medium">{teacherName(a.teacher_id)}</span>
+                          {a.subject && <span className="text-muted-foreground"> · {a.subject}</span>}
                         </div>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => removeTeacher(t.id)}>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeTeacher(a.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     ))}
                   </div>
                 )}
-                <div className="grid grid-cols-3 gap-2">
-                  <Input placeholder="Teacher name" value={teacherForm.teacher_name}
-                    onChange={(e) => setTeacherForm({ ...teacherForm, teacher_name: e.target.value })} />
-                  <Input placeholder="Subject" value={teacherForm.subject}
+                <div className="grid grid-cols-2 gap-2">
+                  <Select value={teacherForm.teacher_id} onValueChange={(v) => setTeacherForm({ ...teacherForm, teacher_id: v })}>
+                    <SelectTrigger><SelectValue placeholder={availableTeachers.length ? "Select teacher" : "No teachers available"} /></SelectTrigger>
+                    <SelectContent>
+                      {availableTeachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Input placeholder="Subject (optional)" value={teacherForm.subject}
                     onChange={(e) => setTeacherForm({ ...teacherForm, subject: e.target.value })} />
-                  <Input placeholder="Email" type="email" value={teacherForm.email}
-                    onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })} />
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={addTeacher}>
-                  <Plus className="h-4 w-4 mr-1" /> Add teacher
+                  <Plus className="h-4 w-4 mr-1" /> Assign
                 </Button>
+                {enrolledTeachers.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Enroll teachers in the Teachers page first.</p>
+                )}
               </div>
             )}
 
@@ -544,17 +558,16 @@ function BatchesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <Label>Assigned Teachers ({currentTeachers.length})</Label>
-            {currentTeachers.length > 0 ? (
+            <Label>Assigned Teachers ({currentAssignments.length})</Label>
+            {currentAssignments.length > 0 ? (
               <div className="space-y-1">
-                {currentTeachers.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between text-sm border rounded px-2 py-1">
+                {currentAssignments.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between text-sm border rounded px-2 py-1">
                     <div>
-                      <span className="font-medium">{t.teacher_name}</span>
-                      {t.subject && <span className="text-muted-foreground"> · {t.subject}</span>}
-                      {t.email && <span className="text-muted-foreground"> · {t.email}</span>}
+                      <span className="font-medium">{teacherName(a.teacher_id)}</span>
+                      {a.subject && <span className="text-muted-foreground"> · {a.subject}</span>}
                     </div>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => removeTeacher(t.id)}>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeTeacher(a.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
@@ -563,16 +576,18 @@ function BatchesPage() {
             ) : (
               <p className="text-sm text-muted-foreground">No teachers assigned yet.</p>
             )}
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t">
-              <Input placeholder="Teacher name" value={teacherForm.teacher_name}
-                onChange={(e) => setTeacherForm({ ...teacherForm, teacher_name: e.target.value })} />
-              <Input placeholder="Subject" value={teacherForm.subject}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+              <Select value={teacherForm.teacher_id} onValueChange={(v) => setTeacherForm({ ...teacherForm, teacher_id: v })}>
+                <SelectTrigger><SelectValue placeholder={availableTeachers.length ? "Select teacher" : "No teachers available"} /></SelectTrigger>
+                <SelectContent>
+                  {availableTeachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input placeholder="Subject (optional)" value={teacherForm.subject}
                 onChange={(e) => setTeacherForm({ ...teacherForm, subject: e.target.value })} />
-              <Input placeholder="Email" type="email" value={teacherForm.email}
-                onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })} />
             </div>
             <Button type="button" variant="outline" size="sm" onClick={addTeacher}>
-              <Plus className="h-4 w-4 mr-1" /> Add teacher
+              <Plus className="h-4 w-4 mr-1" /> Assign
             </Button>
           </div>
           <DialogFooter>
