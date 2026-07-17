@@ -62,7 +62,8 @@ type Batch = {
   status: string;
 };
 
-type Teacher = { id: string; batch_id: string; teacher_name: string; subject: string; email: string };
+type Assignment = { id: string; batch_id: string; teacher_id: string; subject: string | null };
+type EnrolledTeacher = { id: string; full_name: string };
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
