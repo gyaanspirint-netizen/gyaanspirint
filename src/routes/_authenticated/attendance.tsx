@@ -46,7 +46,7 @@ type AttendanceRow = {
   id: string;
   student_id: string;
   date: string;
-  status: "present" | "absent";
+  status: "present" | "absent" | "leave";
   batch?: string;
 };
 
@@ -76,7 +76,7 @@ function AdminAttendance() {
   const [batchList, setBatchList] = useState<string[]>([]);
   const [selectedBatch, setSelectedBatch] = useState<string>("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [todayMap, setTodayMap] = useState<Record<string, "present" | "absent">>({});
+  const [todayMap, setTodayMap] = useState<Record<string, "present" | "absent" | "leave">>({});
   const [history, setHistory] = useState<AttendanceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -116,7 +116,7 @@ function AdminAttendance() {
       toast.error(error.message);
       return;
     }
-    const map: Record<string, "present" | "absent"> = {};
+    const map: Record<string, "present" | "absent" | "leave"> = {};
     (data ?? []).forEach((r) => {
       map[r.student_id] = r.status;
     });
@@ -151,7 +151,7 @@ function AdminAttendance() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, selectedBatch]);
 
-  const mark = async (studentId: string, status: "present" | "absent") => {
+  const mark = async (studentId: string, status: "present" | "absent" | "leave") => {
     if (!selectedBatch) { toast.error("Select a batch"); return; }
     const dbBatch = selectedBatch === "__none__" ? "" : selectedBatch;
     setSavingId(studentId);
