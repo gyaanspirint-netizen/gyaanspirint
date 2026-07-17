@@ -238,9 +238,7 @@ function BatchesPage() {
     if (error) return toast.error(error.message);
     fetchAll();
   };
-    if (error) return toast.error(error.message);
-    fetchAll();
-  };
+
 
   const openAssignTeachers = (b: Batch) => {
     setTeacherBatch(b);
