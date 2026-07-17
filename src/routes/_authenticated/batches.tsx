@@ -139,7 +139,7 @@ function BatchesPage() {
     setEditing(null);
     setForm(empty);
     setErrors({});
-    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+    setTeacherForm({ teacher_id: "", subject: "" });
     setOpen(true);
   };
   const openEdit = (b: Batch) => {
@@ -156,7 +156,7 @@ function BatchesPage() {
       status: (b.status as FormValues["status"]) ?? "active",
     });
     setErrors({});
-    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+    setTeacherForm({ teacher_id: "", subject: "" });
     setOpen(true);
   };
 
@@ -228,7 +228,7 @@ function BatchesPage() {
     });
     if (error) return toast.error(`Could not assign teacher: ${error.message}`);
     toast.success("Teacher assigned");
-    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+    setTeacherForm({ teacher_id: "", subject: "" });
     fetchAll();
   };
 
@@ -240,7 +240,7 @@ function BatchesPage() {
 
   const openAssignTeachers = (b: Batch) => {
     setTeacherBatch(b);
-    setTeacherForm({ teacher_name: "", subject: "", email: "" });
+    setTeacherForm({ teacher_id: "", subject: "" });
   };
 
   const onDelete = async () => {
