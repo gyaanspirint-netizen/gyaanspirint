@@ -614,7 +614,7 @@ function StudentAttendance() {
                       <TableCell>{format(new Date(r.date), "PPP")}</TableCell>
                       <TableCell>{r.batch || "—"}</TableCell>
                       <TableCell>
-                        {r.status === "present" ? <Badge>Present</Badge> : <Badge variant="destructive">Absent</Badge>}
+                        {r.status === "present" ? <Badge>Present</Badge> : r.status === "leave" ? <Badge variant="secondary">Leave</Badge> : <Badge variant="destructive">Absent</Badge>}
                       </TableCell>
                     </TableRow>
                   ))}
