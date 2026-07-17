@@ -254,8 +254,10 @@ function BatchesPage() {
     fetchAll();
   };
 
-  const teacherCount = (batchId: string) => teachers.filter((t) => t.batch_id === batchId).length;
-  const currentTeachers = activeBatch ? teachers.filter((t) => t.batch_id === activeBatch.id) : [];
+  const teacherCount = (batchId: string) => assignments.filter((a) => a.batch_id === batchId).length;
+  const currentAssignments = activeBatch ? assignments.filter((a) => a.batch_id === activeBatch.id) : [];
+  const teacherName = (id: string) => enrolledTeachers.find((t) => t.id === id)?.full_name ?? "Teacher";
+  const availableTeachers = enrolledTeachers.filter((t) => !currentAssignments.some((a) => a.teacher_id === t.id));
   const scheduleLabel = (b: Batch) =>
     b.schedule_type === "daily" ? "Daily"
     : b.schedule_type === "alternate" ? "Alternate"
